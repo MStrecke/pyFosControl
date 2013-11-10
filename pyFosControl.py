@@ -77,10 +77,32 @@ class camBase(object):
         self.user = user
         self.password = password
 
+        self.debugfile = None
+        self.consoleDump = False
+
         # GetMJStream has is special URL
         p = {"cmd": "GetMJStream", "usr": self.user, "pwd": self.password }
         ps = urllib.urlencode(p)
         self.MJStreamURL = "%s://%s:%s/cgi-bin/CGIStream.cgi?%s" % (prot,host,port,ps)
+
+
+    def openDebug(self,filename):
+        """ dump communication with camera into file
+        :param filename: filename to dump into
+        """
+        self.debugfile = open(filename,"w")
+
+    def closeDebug(self):
+        """ close debug file
+        """
+        if not self.debugfile is None: self.debugfile.close()
+        self.debugfile = None
+
+    def setConsoleDump(self,onOff):
+        """ switch debug dump to console on/off
+        :param onOff: switch
+        """
+        self.consoleDump = onOff
 
     def decodeResult(self,xmldata, doBool = []):
         """decode XML resulted by API call
@@ -122,12 +144,11 @@ class camBase(object):
 
         return res
 
-    def sendcommand(self,cmd, param = {}, debug = False, raw = False, doBool = []):
+    def sendcommand(self,cmd, param = {}, raw = False, doBool = []):
         """ send command to camera and return result
 
         :param cmd: command without parameters
-        :param param: parameters as dictionary
-        :param debug: print some debug messages
+        :param param: parameters as dictionary (None value will exclude it)
         :param raw: if raw, return result as is, not decoded as :class:resultObj
         :param doBool: if results contains these settings, try to convert them to boolean values
                        if param contains these settings, convert bool to "1"/"0"
@@ -141,22 +162,27 @@ class camBase(object):
                 if param[p] is False: param[p] = "0"
 
 
-        if debug: print "sending: cmd %s, param %s" % (cmd, param)
-        p = {"cmd": cmd, "usr": self.user, "pwd": self.password }
-        p.update(param)
-        ps = urllib.urlencode(p)
-        if debug: print self.base + "?" + ps
+        pa = {"cmd": cmd, "usr": self.user, "pwd": self.password }
+
+        # add params not set to None
+        for p in param:
+            if not param[p] is None:
+                pa[p] = param[p]
+
+        ps = urllib.urlencode(pa)
+
+        if self.consoleDump: print("%s?%s\n\n" % (self.base,ps))
+        if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base,ps))
         data = urllib.urlopen(self.base + "?" + ps).read()
 
-        if debug: print data
+        if self.consoleDump: print("%s\n\n" % (data))
+        if not self.debugfile is None: self.debugfile.write("%s\n\n" % (data))
 
         if raw:
-            if debug: print "raw result: %s" % data
             return data
 
         res = self.decodeResult(data, doBool = doBool)
         reso = resultObj(res)
-        if debug: print "result",reso.result
         return reso
 
     # image settings
@@ -200,11 +226,28 @@ class camBase(object):
         """
         return self.MJStreamURL
 
-    def getOSDSetting(self):   return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
-    def setOSDSetting(self,isEnableTimeStamp,isEnableDevName,dispPos,isEnableOSDMask):
+    def getOsdSetting(self):
+        return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
+    def setOsdSetting(self,isEnableTimeStamp,isEnableDevName,dispPos):
+        """
+        .. note: The parameter isEnableOSDMask which is described in the API has no effect. See setOsdMask
+        """
         return self.sendcommand("setOSDSetting",
-            param={'isEnableTimeStamp':isEnableTimeStamp, 'isEnableDevName':isEnableDevName, 'dispPos':dispPos, 'isEnableOSDMask':isEnableOSDMask },
-            doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
+            param={'isEnableTimeStamp':isEnableTimeStamp, 'isEnableDevName':isEnableDevName, 'dispPos':dispPos },
+            doBool=["isEnableTimeStamp","isEnableDevName"])
+
+    def setOsdMask(self, isEnableOSDMask,doBool=["isEnableOSDMask"]):
+        """ set/reset para,eter isEnableOSDMask
+        .. note: This is an undocumented CGI command
+        """
+        return self.sendcommand("setOSDMask",
+            param={'isEnableOSDMask':isEnableOSDMask },
+            doBool=["isEnableOSDMask"])
+    def getOsdMask(self):
+        """
+        .. note: This is an undocumented CGI command
+        """
+        return self.sendcommand("getOSDMask", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
 
     def getOsdMaskArea(self):
         w = self.sendcommand("getOsdMaskArea")

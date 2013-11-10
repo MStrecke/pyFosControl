@@ -486,8 +486,13 @@ if __name__ == "__main__":
     # connection to the camera
     do = cam(prot,host,port,user,passwd)
 
-    # just testing these
-    print do.logIn("admin", groupId=555)
-    print do.setOSDSetting(True,False,0,False)
-    print do.getOSDSetting()
-    print do.logOut("admin", groupId=555)
+    # display basic camera info
+    res = do.getDevInfo()
+    if res.result == 0:       # quick check
+        print """product name: %s
+serial number: %s
+camera name: %s
+firmware version: %s
+hardware version: %s""" % (res.productName, res.serialNo, res.devName, res.firmwareVer, res.hardwareVer)
+    else:
+        print res.getResult()[1]

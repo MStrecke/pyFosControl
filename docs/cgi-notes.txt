@@ -1,0 +1,25 @@
+Notes and changes to Foscam CGI documentation v. 1.0.4:
+=======================================================
+
+getWifiConfig:
+- is admin only
+- result of PSK is urlencoded (since 1.11.1.18, I think)
+
+snapPicture2
+- max. pic size is 512000 bytes
+  Workaround: decrease quality setting, or use snapPicture and follow the link
+
+getPTZspeed/setPTZspeed
+- contrary to doc: 0: very fast, 4: very slow
+
+setOSDSetting
+- parameter `isEnableOSDMask` not working
+
+setOSDMask
+- undocumented CGI call
+- parameter: isEnableOSDMask
+
+getOSDMask
+- undocumented CGI call
+- same reseult as getOSDSetting
+

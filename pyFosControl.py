@@ -104,10 +104,10 @@ class camBase(object):
         """
         self.consoleDump = onOff
 
-    def decodeResult(self,xmldata, doBool = []):
+    def decodeResult(self,xmldata, doBool = None):
         """decode XML resulted by API call
         :param xmldata: the xml string
-        :param doBool: if parameter exists, try to convert them to a boolean value
+        :param doBool: list of names, if parameter exists, try to convert them to a boolean value
         :return: dictionary with tags as keys
         :raises: assertion error if not exactly one `CGI_Result` tag is found
 
@@ -137,29 +137,35 @@ class camBase(object):
                 xmldata = urllib.unquote(xmldata)
                 res[ele.nodeName] = xmldata
 
-        for p in doBool:
-            if p in res:
-                if res[p] == "1": res[p] = True
-                if res[p] == "0": res[p] = False
+        if not doBool is None:
+            for p in doBool:
+                if p in res:
+                    if res[p] == "1": res[p] = True
+                    if res[p] == "0": res[p] = False
 
         return res
 
-    def sendcommand(self,cmd, param = {}, raw = False, doBool = []):
+    def sendcommand(self,cmd, param = None, raw = False, doBool = None):
         """ send command to camera and return result
 
         :param cmd: command without parameters
-        :param param: parameters as dictionary (None value will exclude it)
+        :param param:dictionary of parameter, e.g. {key1: value1, key2: value2, ...}
+                     if a value is None, if will not be encoded
         :param raw: if raw, return result as is, not decoded as :class:resultObj
-        :param doBool: if results contains these settings, try to convert them to boolean values
+        :param doBool: array of names
+                       if results contains these settings, try to convert them to boolean values
                        if param contains these settings, convert bool to "1"/"0"
         :return: resultObj with decoded data or raw data
         """
 
+        if param is None: param = {}
+
         # convert boolean to "0"/"1"
-        for p in param:
-            if p in doBool:
-                if param[p] is True: param[p] = "1"
-                if param[p] is False: param[p] = "0"
+        if not doBool is None:
+            for p in param:
+                if p in doBool:
+                    if param[p] is True: param[p] = "1"
+                    if param[p] is False: param[p] = "0"
 
 
         pa = {"cmd": cmd, "usr": self.user, "pwd": self.password }

@@ -1,0 +1,7 @@
+[general]
+protocol=https
+host=192.168.0.103
+port=443
+user=admin
+password=12345
+

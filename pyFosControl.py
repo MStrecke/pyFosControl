@@ -175,7 +175,7 @@ class camBase(object):
         if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base,ps))
         data = urllib.urlopen(self.base + "?" + ps).read()
 
-        if self.consoleDump: print("%s\n\n" % (data))
+        if self.consoleDump: print("%s\n\n" % data)
         if not self.debugfile is None: self.debugfile.write("%s\n\n" % (data))
 
         if raw:
@@ -200,7 +200,7 @@ class camBase(object):
         """ set power frequency of sensor
         ;param is50hz: True: 50 Hz, False: 60 Hz
         """
-        return self.sendcommand("setPwrFreq", {'freq': is50hz}, doBool["freq"] )
+        return self.sendcommand("setPwrFreq", {'freq': is50hz}, doBool=["freq"] )
 
     def getVideoStreamParam(self):
         """
@@ -213,12 +213,14 @@ class camBase(object):
         """
         return self.sendcommand("setVideoStreamParam", {'streamType':streamType, 'bitRate': bitRate,' frameRate': frameRate, 'GOP': GOP, 'isVBR':isVBR})
     def getMainVideoStreamType(self):   return self.sendcommand("getMainVideoStreamType")
-    def getSubVideoStreamType(self):   return self.sendcommand("getSubVideoStreamType", doBool["isVBR0","isVBR1","isVBR2","isVBR3"])
+    def getSubVideoStreamType(self):   return self.sendcommand("getSubVideoStreamType", doBool=["isVBR0","isVBR1","isVBR2","isVBR3"])
     def setMainVideoStreamType(self,streamType):   return self.sendcommand("setMainVideoStreamType", {'streamType': streamType})
+
     def setSubVideoStreamType(self,format):
         """ format: 0: H264, 1=MJpeg
         """
         return self.sendcommand("setSubVideoStreamType", {'format': format})
+
     def getMJStream(self):
         """
         :returns: URL of MJPEG-Stream
@@ -236,7 +238,7 @@ class camBase(object):
             param={'isEnableTimeStamp':isEnableTimeStamp, 'isEnableDevName':isEnableDevName, 'dispPos':dispPos },
             doBool=["isEnableTimeStamp","isEnableDevName"])
 
-    def setOsdMask(self, isEnableOSDMask,doBool=["isEnableOSDMask"]):
+    def setOsdMask(self, isEnableOSDMask):
         """ set/reset para,eter isEnableOSDMask
         .. note: This is an undocumented CGI command
         """
@@ -436,7 +438,7 @@ class camBase(object):
         if not ip is None: param["ip"]=ip
         if not groupId is None: param["groupId"] = groupId
         r = self.sendcommand("logIn", param )
-        if (r.result == 0):
+        if r.result == 0:
             if not r.logInResult is None:
                 r.set("result", -int(r.logInResult))
         return r
@@ -502,13 +504,30 @@ class cam(camBase):
 
         try:
             poicnt = int(w.cnt)
-        except:
+        except ValueError:
             return []
 
         for x in range(poicnt):
             d = w.get("point%s" % x)
             res.append(d)
         return res
+
+    def activateOsdMaskArea(self, areas):
+        """ activates OSD mask areas
+        :param areas: area definition {0: (x1,y2,x2,y2), 1: ..., 3: ...}
+        """
+        res = self.setOsdMask(isEnableOSDMask = True)
+        if res.result == 0:
+            self.setOsdMaskArea(areas)
+
+    def deactivateOsdmask(self):
+        """ deactivates the OsdMask(s)
+        """
+        res = self.setOsdMask(isEnableOSDMask = False)
+        if res.result == 0:
+            # send the command twice
+            # a single call does not switch it off reliably
+            self.setOsdMask(isEnableOSDMask = False)
 
     # this function sets WPA config only
     def setWifiSettingWPA(self, enable, useWifi, ap, encr, psk, auth):

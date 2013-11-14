@@ -27,3 +27,6 @@ getOSDMask
 OSD masks:
 - The dimensions use by masks seem to be 1/10000 of the picture width/height.
 - Does not work with snapshots.
+
+importConfig
+- undocumented return parameter: importResult

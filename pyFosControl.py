@@ -1,11 +1,65 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib
+import urllib, urllib2
 import urlparse
 import xml.dom.minidom
 import re
 import ConfigParser
+
+def encode_multipart(fields, files, boundary=None):
+    """
+    Encodes a file in order to send it as an answer to a form
+    """
+    import mimetypes
+    import random
+    import string
+
+    _BOUNDARY_CHARS = string.digits + string.ascii_letters
+
+    # see http://code.activestate.com/recipes/578668-encode-multipart-form-data-for-uploading-files-via/
+    def escape_quote(s):
+        return s.replace('"', '\\"')
+
+    if boundary is None:
+        boundary = ''.join(random.choice(_BOUNDARY_CHARS) for i in range(30))
+    lines = []
+
+    for name, value in fields.items():
+        lines.extend((
+            '--{0}'.format(boundary),
+            'Content-Disposition: form-data; name="{0}"'.format(escape_quote(name)),
+            '',
+            str(value),
+        ))
+
+    for name, value in files.items():
+        filename = value['filename']
+        if 'mimetype' in value:
+            mimetype = value['mimetype']
+        else:
+            mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        lines.extend((
+            '--{0}'.format(boundary),
+            'Content-Disposition: form-data; name="{0}"; filename="{1}"'.format(
+                    escape_quote(name), escape_quote(filename)),
+            'Content-Type: {0}'.format(mimetype),
+            '',
+            value['content'],
+        ))
+
+    lines.extend((
+        '--{0}--'.format(boundary),
+        '',
+    ))
+    body = '\r\n'.join(lines)
+
+    headers = {
+        'Content-Type': 'multipart/form-data; boundary={0}'.format(boundary),
+        'Content-Length': str(len(body)),
+    }
+
+    return (body, headers)
 
 class resultObj(object):
     """
@@ -145,7 +199,7 @@ class camBase(object):
 
         return res
 
-    def sendcommand(self,cmd, param = None, raw = False, doBool = None):
+    def sendcommand(self,cmd, param = None, raw = False, doBool = None, headers = None, data = None):
         """ send command to camera and return result
 
         :param cmd: command without parameters
@@ -155,6 +209,8 @@ class camBase(object):
         :param doBool: array of names
                        if results contains these settings, try to convert them to boolean values
                        if param contains these settings, convert bool to "1"/"0"
+        :param headers: headers of the request (used in POST)
+        :param data:    data used for POST
         :return: resultObj with decoded data or raw data
         """
 
@@ -179,15 +235,21 @@ class camBase(object):
 
         if self.consoleDump: print("%s?%s\n\n" % (self.base,ps))
         if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base,ps))
-        data = urllib.urlopen(self.base + "?" + ps).read()
+        url = self.base + "?" + ps
 
-        if self.consoleDump: print("%s\n\n" % data)
-        if not self.debugfile is None: self.debugfile.write("%s\n\n" % (data))
+        if headers is None:
+            retdata = urllib.urlopen(url,data = data).read()
+        else:
+            request = urllib2.Request(url, data = data, headers = headers)
+            retdata = urllib2.urlopen(request).read()
+
+        if self.consoleDump: print("%s\n\n" % retdata)
+        if not self.debugfile is None: self.debugfile.write("%s\n\n" % (retdata))
 
         if raw:
-            return data
+            return retdata
 
-        res = self.decodeResult(data, doBool = doBool)
+        res = self.decodeResult(retdata, doBool = doBool)
         reso = resultObj(res)
         return reso
 
@@ -361,6 +423,18 @@ class camBase(object):
             return (data, w.fileName)
         else:
             return None
+
+    def importConfig(self,filedata,filename):
+        """ send config file to camera
+        :param filedata: binary content of the config file
+        :param filename: filename of the config file
+        .. note:: camera will reboot after successful upload and not be responsive for some time
+        """
+        fields = {'submit': 'import'}
+        files = {'file': {'filename': filename, 'content': filedata}}
+        data, headers = encode_multipart(fields, files)
+        return self.sendcommand("importConfig", headers = headers, data = data)
+
 
     def snapPicture(self):
         """ queries the camera for a snapshot

@@ -374,6 +374,9 @@ class camBase(object):
         return self.sendcommand("setOsdMaskArea", param = params)
 
 
+    def getMotionDetectConfig(self):
+        return self.sendcommand("getMotionDetectConfig", doBool=["isEnable"])
+
     # ptz commands
     def ptzReset(self):   return self.sendcommand("ptzReset")
     def ptzMoveDown(self): return self.sendcommand("ptzMoveDown")
@@ -613,6 +616,45 @@ class cam(camBase):
     def setWifiSettingWPA(self, enable, useWifi, ap, encr, psk, auth):
         self.setWifiSetting(enable, useWifi, ap, encr, psk, auth,
             1, "", "", "", "", 64, 64, 64, 64)
+
+    def getMotionDetectConfig_proc(self):
+        _motionDetectSensitivity = {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"}
+        res = self.getMotionDetectConfig()
+        res.set("_sensitivityStr", _motionDetectSensitivity.get(res.sensitivity,"???"))
+
+        sarray=[]
+        for day in range(7):
+            try:
+                s = res.get("schedule%s" % day)
+                if s is None: raise ValueError
+                si = int(s)
+                # add heading zero
+                w = ("0"*48+bin(si)[2:])[48:]
+                sarray.append(w)
+            except ValueError:
+                sarray = None
+                break
+
+        if not sarray is None:
+            res.set("_schedules",sarray)
+
+        sarray=[]
+        for no in range(10):
+            try:
+                s = res.get("area%s" % no)
+                if s is None: raise ValueError
+                si = int(s)
+                # add heading zero
+                w = ("0"*10+bin(si)[2:])[10:]
+                sarray.append(w)
+            except ValueError:
+                sarray = None
+                break
+
+        if not sarray is None:
+            res.set("_areas",sarray)
+
+        return res
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

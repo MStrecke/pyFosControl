@@ -61,6 +61,62 @@ def encode_multipart(fields, files, boundary=None):
 
     return (body, headers)
 
+class DictBits(object):
+    """ Helper class for bit mappings
+
+    >>> test = DictBits( {0:"zero", 1:"one", 2:"two", 3:"three"} )
+    >>> test.toArray(5)
+    ['zero', 'two']
+    >>> test.toInt( ["two","three"] )
+    12
+    >>> test.toArray(100)
+    ...
+    KeyError: 5
+    >>> test.toInt( ["one","abcde"] )
+    ...
+    ValueError: option abcde not found
+    """
+    def __init__(self,dict):
+        """
+        :param dict: dictionary {bitpos1: "label1", bitpos2: "label2", ... }
+        """
+        self.dict = dict
+        self.values = dict.values()
+        self.items = dict.items()
+
+    def toInt(self,value):
+        """ generate bitmask from labels
+
+        :param value: array with labels to convert
+        :returns: bitmask
+        :throws: ValueError, if label is not in dict
+        """
+        res = 0
+        for v in value:
+            if not v in self.values: raise ValueError,"option %s not found" % v
+            k = [key for key,value in self.items if value==v ][0]
+            res |= (1 << k)
+        return res
+
+    def toArray(self,value):
+        """ create array of labels from bitmask
+
+        :param value: integer with bitmask
+        :returns: array of labels
+        :throws: KeyError, if a bit is set in value whose position is not mentioned in the dict
+        """
+        res = []
+        pos = 0
+        while value != 0:
+            if value & 1:
+                res.append(self.dict[pos])
+            value >>= 1
+            pos += 1
+        return res
+
+MD_motionAlarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
+MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
+
 class resultObj(object):
     """
     create a resultObject from the XML data returned by the function call.
@@ -92,6 +148,14 @@ class resultObj(object):
 
     def set(self,name,value):
         self.data[name] = value
+
+    def stringLookupResultSet(self,value, dict, name):
+        """ lookup a string in dict and set named attribute
+        :param value: value to look-up
+        :param dict: dictionary to look the value up
+        :param name: name of the attribute to be set, if lookup was successful
+        """
+        if value in dict: self.set(name,dict[value])
 
     def getResult(self):
         """
@@ -377,6 +441,18 @@ class camBase(object):
     def getMotionDetectConfig(self):
         return self.sendcommand("getMotionDetectConfig", doBool=["isEnable"])
 
+    def setMotionDetectConfig(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
+        param = {"isEnable": isEnable,
+                 "linkage": linkage,
+                 "triggerInterval": triggerInterval }
+        for day in range(7):
+            param["schedule%s" % day] = schedules[day]
+        for row in range(10):
+            param["area%s" % row] = areas[row]
+
+        return self.sendcommand("setMotionDetectConfig", param = param, doBool=["isEnable"])
+
+
     # ptz commands
     def ptzReset(self):   return self.sendcommand("ptzReset")
     def ptzMoveDown(self): return self.sendcommand("ptzMoveDown")
@@ -573,7 +649,7 @@ class cam(camBase):
     def getPTZSpeed_proc(self):
         _ptzSpeedList = {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'}
         res = self.sendcommand("getPTZSpeed")
-        res.set("_speed", _ptzSpeedList.get(res.speed,"???"))
+        res.stringLookupResultSet(res.speed, _ptzSpeedList, "_speed")
         return res
 
     def getPTZPresetPointList_proc(self):
@@ -625,10 +701,10 @@ class cam(camBase):
                   each string contains "1"/"0" for each half hour of the day
         _linkage: array of alarm action
         """
+
         _motionDetectSensitivity = {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"}
-        _motionAlarmAction = {0:"ring", 1:"mail", 2:"picture", 3:"video"}
         res = self.getMotionDetectConfig()
-        res.set("_sensitivityStr", _motionDetectSensitivity.get(res.sensitivity,"???"))
+        res.stringLookupResultSet(res.sensitivty,_motionDetectSensitivity,"_sensitivity")
 
         sarray=[]
         for day in range(7):
@@ -664,18 +740,20 @@ class cam(camBase):
 
         try:
             alarm = int(res.linkage)
-        except (ValueError, TypeError):
+            w = MD_motionAlarmAction.toArray(alarm)
+            res.set("_linkage", w)
+        except (ValueError, TypeError, KeyError):
             alarm = None
 
-        if not alarm is None:
-            mask = 1
-            sarray = []
-            for bit in range(4):
-                if alarm & mask:
-                    sarray.append(_motionAlarmAction[bit])
-                mask <<= 1
-            res.set("_linkage", sarray)
         return res
+
+    def setMotionDetectConfig_proc(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
+        for day in range(7):
+            schedules[day] = int(schedules[day],2)
+        for row in range(10):
+            areas[row] = int(areas[row],2)
+        self.setMotionDetectConfig(isEnable, linkage, snapInterval, triggerInterval, schedules, areas)
+
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

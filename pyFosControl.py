@@ -391,13 +391,6 @@ class camBase(object):
 
     def getPTZPresetPointList(self): return self.sendcommand("getPTZPresetPointList")
 
-    _pztSpeedList = {4: 'very slow', 3: 'slow', 2: 'normal speed', 1: 'fast', 0: 'very fast'}
-    """
-    meaning of parameter ''speed'' in :func:setPTZSpeed or the result of :func:getPTZSpeed
-
-    Compared to the info in the API doc, the order is reversed.
-    """
-
     def getPTZSpeed(self): return self.sendcommand("getPTZSpeed")
     def setPTZSpeed(self,speed): return self.sendcommand("setPTZSpeed", {"speed": speed} )
 
@@ -576,6 +569,12 @@ class cam(camBase):
 
         data = urllib.urlopen(link2).read()
         return (data, fname)
+
+    def getPTZSpeed_proc(self):
+        _ptzSpeedList = {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'}
+        res = self.sendcommand("getPTZSpeed")
+        res.set("_speed", _ptzSpeedList.get(res.speed,"???"))
+        return res
 
     def getPTZPresetPointList_proc(self):
         """ queries the device for a list of preset points

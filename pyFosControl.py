@@ -617,7 +617,16 @@ class cam(camBase):
             1, "", "", "", "", 64, 64, 64, 64)
 
     def getMotionDetectConfig_proc(self):
+        """ get motion detection configuration with decoded information
+
+        The following information is decoded:
+        _areas: 10x10 active areas in frame -> array of 10 strings, each strings contains 10 times "1"/"0" for active/non active
+        _schedules: 7 strings of 48 chars, one for each day (starting with monday)
+                  each string contains "1"/"0" for each half hour of the day
+        _linkage: array of alarm action
+        """
         _motionDetectSensitivity = {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"}
+        _motionAlarmAction = {0:"ring", 1:"mail", 2:"picture", 3:"video"}
         res = self.getMotionDetectConfig()
         res.set("_sensitivityStr", _motionDetectSensitivity.get(res.sensitivity,"???"))
 
@@ -653,6 +662,19 @@ class cam(camBase):
         if not sarray is None:
             res.set("_areas",sarray)
 
+        try:
+            alarm = int(res.linkage)
+        except (ValueError, TypeError):
+            alarm = None
+
+        if not alarm is None:
+            mask = 1
+            sarray = []
+            for bit in range(4):
+                if alarm & mask:
+                    sarray.append(_motionAlarmAction[bit])
+                mask <<= 1
+            res.set("_linkage", sarray)
         return res
 
 if __name__ == "__main__":

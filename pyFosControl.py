@@ -142,7 +142,7 @@ def binaryarray2int(source):
 
 class resultObj(object):
     """
-    create a resultObject from the XML data returned by the function call.
+    create a resultObject from the XML data returned by the camera.
     XML fields will be accessible as object attributes
     """
     def __init__(self, data):
@@ -151,7 +151,7 @@ class resultObj(object):
     def __getattr__(self,name):
         """
         make XML fields accessible as attributes
-        Special treatment for "result" field: return integer if possible
+        Special treatment for "result" field: return as integer, if possible
         """
         if name == "result":
             try:
@@ -170,10 +170,12 @@ class resultObj(object):
         return self.__getattr__(name)
 
     def set(self,name,value):
+        """ create (or override) attribute name with value
+        """
         self.data[name] = value
 
-    def stringLookupResultSet(self,value, dict, name):
-        """ lookup a string in dict and set named attribute
+    def stringLookupSet(self,value, dict, name):
+        """ lookup a string in dict and set named attribute accordingly
         :param value: value to look-up
         :param dict: dictionary to look the value up
         :param name: name of the attribute to be set, if lookup was successful
@@ -241,8 +243,9 @@ class camBase(object):
 
     Not much processing:
     - doBool parameters are converted to/from boolean
+    - string values in the returned XML are being "url-unquoted"
     - XML returned from the camera is converted into a resultObj
-    - resultObj param "result" is converted to int, if possible
+    - resultObj param "result" is converted to integer, if possible
     """
     def __init__(self,prot,host,port,user,password):
         """
@@ -678,6 +681,34 @@ class camBase(object):
         param.update( array2dict(schedules,"schedule") )
         return self.sendcommand("setIOAlarmConfig", param=param, doBool=["isEnable"])
 
+    def clearIOAlarmOutput(self):
+        return self.sendcommand("clearIOAlarmOutput")
+
+    def getMultiDevList(self):
+        return self.sendcommand("getMultiDevList")
+
+    def getMultiDevDetailInfo(self,channel):
+        return self.sendcommand("getMultiDevDetailInfo", param = {"chnnl": channel})
+
+    def addMultiDev(selfself,channel, productType, ip, port, mediaPort, userName, passWord, devName):
+        return self.sendcommand("addMultiDev", param = {"chnnl": channel,
+                                                        "productType": productType,
+                                                        "ip": ip,
+                                                        "port": port,
+                                                        "mediaPort": mediaPort,
+                                                        "userName": userName,
+                                                        "passWord": passWord,
+                                                        "devName": devName })
+
+    def delMultiDev(self,channel):
+        return self.sendcommand("delMultiDev", param = {"chnnl": channel})
+
+    def addAccount(self, usrName, usrPwd, privilege):
+        return self.sendcommand("addAccount",param = {"usrName": usrName, "usrPwd": usrPwd, "privilege": privilege})
+
+    def delAccount(self, usrName):
+        return self.sendcommand("delAccount",param = {"usrName": usrName} )
+
 
     def logIn(self,name, ip=None, groupId = None):
         param = {"usrName": name}
@@ -749,7 +780,7 @@ class cam(camBase):
     def getPTZSpeed_proc(self):
         _ptzSpeedList = {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'}
         res = self.sendcommand("getPTZSpeed")
-        res.stringLookupResultSet(res.speed, _ptzSpeedList, "_speed")
+        res.stringLookupSet(res.speed, _ptzSpeedList, "_speed")
         return res
 
     def getPTZPresetPointList_proc(self):
@@ -804,7 +835,7 @@ class cam(camBase):
 
         _motionDetectSensitivity = {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"}
         res = self.getMotionDetectConfig()
-        res.stringLookupResultSet(res.sensitivty,_motionDetectSensitivity,"_sensitivity")
+        res.stringLookupSet(res.sensitivty,_motionDetectSensitivity,"_sensitivity")
 
         res.collectBinaryArray("schedule","_schedules",48)
         res.collectBinaryArray("area","_areas",10)
@@ -823,10 +854,10 @@ class cam(camBase):
 
     def getSnapConfig_proc(self):
         res = self.sendcommand("getSnapConfig")
-        res.stringLookupResultSet(res.snapPicQuality,
+        res.stringLookupSet(res.snapPicQuality,
             {"0":"low", "1": "normal", "2": "high"},
             "_snapPicQuality")
-        res.stringLookupResultSet(res.saveLocation,
+        res.stringLookupSet(res.saveLocation,
             {"0":"SD card", "1": "reserved", "2": "FTP"},
             "_saveLocation")
         return res

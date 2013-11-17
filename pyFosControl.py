@@ -703,6 +703,17 @@ class camBase(object):
     def delAccount(self, usrName):
         return self.sendcommand("delAccount",param = {"usrName": usrName} )
 
+    def changePassword(self, usrName, oldPwd, newPwd):
+        return self.sendcommand("changePassword",param = {"usrName": usrName, "oldPwd": oldPwd, "newPwd": newPwd} )
+
+    def changeUserName(self, usrName, newUsrName):
+        return self.sendcommand("changeUserName",param = {"usrName": usrName, "newUsrName": newUsrName } )
+
+    def getSessionList(self):
+        return self.sendcommand("getSessionList")
+
+    def getUserList(self):
+        return self.sendcommand("getUserList")
 
     def logIn(self,name, ip=None, groupId = None):
         param = {"usrName": name}

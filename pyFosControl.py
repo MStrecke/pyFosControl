@@ -118,15 +118,26 @@ class DictBits(object):
 BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
 MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
 
+def array2dict(source,keyprefix):
+    """ convert an array to dict using keys starting with keyprefix
+    .. note:: used to create param dicts for sendcommand
+    """
+    res = {}
+    count = 0
+    for s in source:
+        res["%s%s" % (keyprefix, count)] = s
+        count += 1
+    return res
+
 def binaryarray2int(source):
     """ helper to convert array with binary strings (e.g. schedules) to integer
 
-    :param source: the array with strings to convert
-    :returns array with ints
+    :param source: the array with binary strings to convert
+    :returns array with integers
     """
     res = []
-    for s in source:
-        res.append(int(s,2))
+    for x in source:
+        res.append(int(x,2))
     return res
 
 class resultObj(object):
@@ -226,7 +237,12 @@ class resultObj(object):
 
 class camBase(object):
     """
-    basic interface to camera - not much processing
+    basic interface to camera
+
+    Not much processing:
+    - doBool parameters are converted to/from boolean
+    - XML returned from the camera is converted into a resultObj
+    - resultObj param "result" is converted to int, if possible
     """
     def __init__(self,prot,host,port,user,password):
         """
@@ -652,6 +668,16 @@ class camBase(object):
     def getIOAlarmConfig(self):
         return self.sendcommand("getIOAlarmConfig", doBool=["isEnable"])
 
+    def setIOAlarmConfig(self, isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules):
+        param = {"isEnable": isEnable,
+                 "linkage": linkage,
+                 "alarmLevel": alarmLevel,
+                 "snapInterval": snapInterval,
+                 "triggerInterval": triggerInterval
+                 }
+        param.update( array2dict(schedules,"schedule") )
+        return self.sendcommand("setIOAlarmConfig", param=param, doBool=["isEnable"])
+
 
     def logIn(self,name, ip=None, groupId = None):
         param = {"usrName": name}
@@ -671,6 +697,12 @@ class camBase(object):
         return r
 
 class cam(camBase):
+    """ extended interface
+
+    Some more conversions:
+    - Conversion are usually stored in a parameter with the same name prefixed by "_"
+    - Most "extended" functions use the name of the base functions followed by "_proc"
+    """
     def ptzMove(self, direction):
         """ move camera into given direction or (h)ome
         :param direction:
@@ -781,11 +813,13 @@ class cam(camBase):
         return res
 
     def setMotionDetectConfig_proc(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
-        for day in range(7):
-            schedules[day] = int(schedules[day],2)
-        for row in range(10):
-            areas[row] = int(areas[row],2)
-        self.setMotionDetectConfig(isEnable, linkage, snapInterval, triggerInterval, schedules, areas)
+        self.setMotionDetectConfig(
+            isEnable,
+            BD_alarmAction.toInt(linkage),
+            snapInterval,
+            triggerInterval,
+            binaryarray2int(schedules),
+            binaryarray2int(areas) )
 
     def getSnapConfig_proc(self):
         res = self.sendcommand("getSnapConfig")
@@ -801,6 +835,16 @@ class cam(camBase):
         res = self.getIOAlarmConfig()
         res.collectBinaryArray("schedule","_schedules",48)
         res.DB_convert2array("linkage","_linkage", BD_alarmAction)
+        return res
+
+    def setIOAlarmConfig_proc(self,isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules ):
+        res = self.setIOAlarmConfig(
+            isEnable,
+            BD_alarmAction.toInt(linkage),
+            alarmLevel,
+            snapInterval,
+            triggerInterval,
+            binaryarray2int(schedules) )
         return res
 
 if __name__ == "__main__":

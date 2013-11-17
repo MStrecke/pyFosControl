@@ -148,6 +148,21 @@ class resultObj(object):
     def __init__(self, data):
         self.data = data
 
+        s = {
+            0: "Success",
+            -1: "CGI request string format error",
+            -2: "Username or password error",
+            -3: "Access denied",
+            -4: "CGI execute failure",
+            -5: "Timeout",
+            -6: "Reserve",
+            -7: "Unknown error",
+            -8: "Reserve",
+            None: "Missing result parameter",
+            }.get( self.result)
+        if not s is None:
+            self.set("_result",s)
+
     def __getattr__(self,name):
         """
         make XML fields accessible as attributes
@@ -181,27 +196,6 @@ class resultObj(object):
         :param name: name of the attribute to be set, if lookup was successful
         """
         if value in dict: self.set(name,dict[value])
-
-    def getResult(self):
-        """
-        return result code an error message
-        """
-        s = {
-            0: "Success",
-            -1: "CGI request string format error",
-            -2: "Username or password error",
-            -3: "Access denied",
-            -4: "CGI execute fail",
-            -5: "Timeout",
-            -6: "Reserve",
-            -7: "Unknown error",
-            -8: "Reserve",
-            None: "Missing result parameter",
-             1: "Control Failure"
-        }.get(self.result)
-        if s is None: s = "really unknown error %s" % self.result
-
-        return (self.result, s)
 
     def collectBinaryArray(self,getparname, setparname, length):
         """ scan resultObj for similar attributes and put them into a binaray string array
@@ -901,4 +895,4 @@ camera name: %s
 firmware version: %s
 hardware version: %s""" % (res.productName, res.serialNo, res.devName, res.firmwareVer, res.hardwareVer)
     else:
-        print res.getResult()[1]
+        print res._result

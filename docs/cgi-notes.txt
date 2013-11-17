@@ -30,3 +30,8 @@ OSD masks:
 
 importConfig
 - undocumented return parameter: importResult
+
+setAlarmRecordConfig
+- check return result: -1 = error
+- preRecordSecs seems to be limited to 5
+- alarmRecordSecs seems to be limited to 60

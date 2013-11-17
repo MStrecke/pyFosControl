@@ -114,8 +114,20 @@ class DictBits(object):
             pos += 1
         return res
 
-MD_motionAlarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
+# same for: motion detection, IO alarm
+BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
 MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
+
+def binaryarray2int(source):
+    """ helper to convert array with binary strings (e.g. schedules) to integer
+
+    :param source: the array with strings to convert
+    :returns array with ints
+    """
+    res = []
+    for s in source:
+        res.append(int(s,2))
+    return res
 
 class resultObj(object):
     """
@@ -177,6 +189,40 @@ class resultObj(object):
         if s is None: s = "really unknown error %s" % self.result
 
         return (self.result, s)
+
+    def collectBinaryArray(self,getparname, setparname, length):
+        """ scan resultObj for similar attributes and put them into a binaray string array
+
+         :param getparname: parameter prefix to scan in resultObj
+         :param setparname: name of the parameter the result is stored into
+         :param length: length of the binary string
+        """
+        res = []
+        cnt = 0
+        while True:
+            p = self.get("%s%s" % (getparname,cnt))
+            if p is None: break
+            cnt += 1
+            si = int(p)
+            # add leading zeros
+            w = ("0"*length)+bin(si)[2:]
+            w = w[len(w)-length:]
+            res.append(w)
+        if w != []:
+            self.set(setparname,res)
+
+    def DB_convert2array(self,getparam, setparam, converter):
+        """ helper function: get param, convert to bit mask labels and store
+        :param getparam: name of the source parameter in the resultObj
+        :param setparam: name of the parameter to store the result in
+        :param converter: converter object of type DictBits
+        """
+        try:
+            val = int(self.get(getparam))
+            w = converter.toArray(val)
+            self.set(setparam, w)
+        except (ValueError, TypeError, KeyError):
+            pass
 
 class camBase(object):
     """
@@ -268,7 +314,7 @@ class camBase(object):
 
         :param cmd: command without parameters
         :param param:dictionary of parameter, e.g. {key1: value1, key2: value2, ...}
-                     if a value is None, if will not be encoded
+                     if a value is None, it will not be encoded
         :param raw: if raw, return result as is, not decoded as :class:resultObj
         :param doBool: array of names
                        if results contains these settings, try to convert them to boolean values
@@ -581,9 +627,31 @@ class camBase(object):
         return self.sendcommand("ptzGetCruiseMapInfo", {"name": name} )
 
     def getDevState(self):  return self.sendcommand("getDevState")
-    def getSnapConfig(self):  return self.sendcommand("getSnapConfig")
+    def getSnapConfig(self):
+        return self.sendcommand("getSnapConfig")
     def setSnapConfig(self,quality, location):
         return self.sendcommand("setSnapConfig", {"snapPicQuality": quality, "saveLocation": location} )
+
+    def getRecordList(self, recordPath = None, startTime = None, endTime = None, recordType = None, startNo = None):
+        param = {"recordPath": recordPath,
+                 "startTime": startTime,
+                 "endTime": endTime,
+                 "recordType": recordType,
+                 "startNo": startNo }
+        return self.sendcommand("getRecordList", param=param)
+
+    def getAlarmRecordConfig(self):
+        return self.sendcommand("getAlarmRecordConfig", doBool=["isEnablePreRecord"])
+
+    def setAlarmRecordConfig(self, isEnablePreRecord, preRecordSecs, alarmRecordSecs):
+        param = {"isEnablePreRecord": isEnablePreRecord,
+                 "preRecordSecs": preRecordSecs,
+                 "alarmRecordSecs": alarmRecordSecs }
+        return self.sendcommand("setAlarmRecordConfig", param=param, doBool=["isEnablePreRecord"])
+
+    def getIOAlarmConfig(self):
+        return self.sendcommand("getIOAlarmConfig", doBool=["isEnable"])
+
 
     def logIn(self,name, ip=None, groupId = None):
         param = {"usrName": name}
@@ -706,44 +774,9 @@ class cam(camBase):
         res = self.getMotionDetectConfig()
         res.stringLookupResultSet(res.sensitivty,_motionDetectSensitivity,"_sensitivity")
 
-        sarray=[]
-        for day in range(7):
-            try:
-                s = res.get("schedule%s" % day)
-                if s is None: raise ValueError
-                si = int(s)
-                # add heading zero
-                w = ("0"*48+bin(si)[2:])[48:]
-                sarray.append(w)
-            except ValueError:
-                sarray = None
-                break
-
-        if not sarray is None:
-            res.set("_schedules",sarray)
-
-        sarray=[]
-        for no in range(10):
-            try:
-                s = res.get("area%s" % no)
-                if s is None: raise ValueError
-                si = int(s)
-                # add heading zero
-                w = ("0"*10+bin(si)[2:])[10:]
-                sarray.append(w)
-            except ValueError:
-                sarray = None
-                break
-
-        if not sarray is None:
-            res.set("_areas",sarray)
-
-        try:
-            alarm = int(res.linkage)
-            w = MD_motionAlarmAction.toArray(alarm)
-            res.set("_linkage", w)
-        except (ValueError, TypeError, KeyError):
-            alarm = None
+        res.collectBinaryArray("schedule","_schedules",48)
+        res.collectBinaryArray("area","_areas",10)
+        res.DB_convert2array("linkage","_linkage", BD_alarmAction)
 
         return res
 
@@ -754,6 +787,21 @@ class cam(camBase):
             areas[row] = int(areas[row],2)
         self.setMotionDetectConfig(isEnable, linkage, snapInterval, triggerInterval, schedules, areas)
 
+    def getSnapConfig_proc(self):
+        res = self.sendcommand("getSnapConfig")
+        res.stringLookupResultSet(res.snapPicQuality,
+            {"0":"low", "1": "normal", "2": "high"},
+            "_snapPicQuality")
+        res.stringLookupResultSet(res.saveLocation,
+            {"0":"SD card", "1": "reserved", "2": "FTP"},
+            "_saveLocation")
+        return res
+
+    def getIOAlarmConfig_proc(self):
+        res = self.getIOAlarmConfig()
+        res.collectBinaryArray("schedule","_schedules",48)
+        res.DB_convert2array("linkage","_linkage", BD_alarmAction)
+        return res
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

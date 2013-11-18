@@ -539,7 +539,12 @@ class camBase(object):
 
     def getWifiConfig(self): return self.sendcommand("getWifiConfig")
 
-    # get config (data, filename) or None on error
+    def rebootSystem(self):
+        return self.sendcommand("rebootSystem")
+
+    def restoreToFactorySetting(self):
+        return self.sendcommand("restoreToFactorySetting")
+
     def exportConfig(self):
         """ queries the camera for a blob with all settings
 

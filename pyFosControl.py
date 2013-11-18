@@ -6,6 +6,7 @@ import urlparse
 import xml.dom.minidom
 import re
 import ConfigParser
+import struct, socket
 
 def encode_multipart(fields, files, boundary=None):
     """
@@ -118,13 +119,17 @@ class DictBits(object):
 BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
 MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
 
-def array2dict(source,keyprefix):
-    """ convert an array to dict using keys starting with keyprefix
+def array2dict(source, keyprefix, convertFunc = None):
+    """ convert an array to dict
+    :param keyprefix: key prefix used in the dict
+    :param convertFunc: function to be called to convert value prior to storing it
     .. note:: used to create param dicts for sendcommand
     """
     res = {}
     count = 0
     for s in source:
+        if not convertFunc is None:
+            s = convertFunc(s)
         res["%s%s" % (keyprefix, count)] = s
         count += 1
     return res
@@ -139,6 +144,16 @@ def binaryarray2int(source):
     for x in source:
         res.append(int(x,2))
     return res
+
+def ip2long(ip):
+    """ Convert an IP string to long
+    """
+    return struct.unpack("!L", socket.inet_aton(ip))[0]
+
+def long2ip(w):
+    """ Convert long in to ip string
+    """
+    return socket.inet_ntoa(struct.pack('!L', w))
 
 class resultObj(object):
     """
@@ -196,6 +211,26 @@ class resultObj(object):
         :param name: name of the attribute to be set, if lookup was successful
         """
         if value in dict: self.set(name,dict[value])
+
+    def collectArray(self,getparname, setparname, convertFunc = None):
+        """ scan resultObj for similar attributes and put them into an array
+
+         :param getparname: parameter prefix to scan in resultObj
+         :param setparname: name of the parameter the result is stored into
+         :param convertFunc: function to be use on the data before storing it, or None
+        """
+        res = []
+        cnt = 0
+        while True:
+            p = self.get("%s%s" % (getparname,cnt))
+            if p is None: break
+            cnt += 1
+            if convertFunc is None:
+                res.append(p)
+            else:
+                res.append(convertFunc(p))
+        if res != []:
+            self.set(setparname,res)
 
     def collectBinaryArray(self,getparname, setparname, length):
         """ scan resultObj for similar attributes and put them into a binaray string array
@@ -737,6 +772,16 @@ class camBase(object):
         r = self.sendcommand("logOut", param )
         return r
 
+    def getFirewallConfig(self):
+        return self.sendcommand("getFirewallConfig", doBool=["isEnable"])
+
+    def setFirewallConfig(self,isEnable, rule, ipList):
+        param = {"isEnable": isEnable,
+                 "rule": rule}
+        ips = array2dict(ipList,"ipList")
+        param.update(ips)
+        return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
+
 class cam(camBase):
     """ extended interface
 
@@ -887,6 +932,19 @@ class cam(camBase):
             triggerInterval,
             binaryarray2int(schedules) )
         return res
+
+    def getFirewallConfig_proc(self):
+        res =  self.sendcommand("getFirewallConfig", doBool=["isEnable"])
+        res.collectArray("ipList","_ipList", convertFunc = lambda x: long2ip(int(x)))
+        return res
+
+    def setFirewallConfig_proc(self,isEnable, rule, ipList):
+        param = {"isEnable": isEnable,
+                 "rule": rule}
+        ips = array2dict(ipList, "ipList", convertFunc = lambda x: ip2long(x))
+        param.update(ips)
+        return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
+
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

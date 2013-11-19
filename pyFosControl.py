@@ -120,6 +120,17 @@ class DictBits(object):
 BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
 MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
 
+class DictChar(object):
+    def __init__(self,dict):
+        self.dict = dict
+    def get(self, char, default = None):
+        return self.dict.get(char,default)
+
+DC_WifiEncryption = DictChar( {"0": "Open Mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2"} )
+DC_WifiAuth = DictChar( {"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
+DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
+
+
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
     :param keyprefix: key prefix used in the dict
@@ -221,6 +232,9 @@ class resultObj(object):
             self.set("result", abs(int(subresult)))
         except ValueError:
             self.set("result", subresult)
+
+    def stringLookupConv(self, value, converter, name):
+        self.set(name,converter.get(value))
 
     def stringLookupSet(self,value, dict, name):
         """ lookup a string in dict and set named attribute accordingly
@@ -627,7 +641,8 @@ class camBase(object):
     def setSnapSetting(self,quality,location):
         return self.sendcommand("setSnapSetting",{"snapPicQuality": quality, "saveLocation": location})
 
-    def getWifiConfig(self): return self.sendcommand("getWifiConfig")
+    def getWifiConfig(self):
+        return self.sendcommand("getWifiConfig", doBool=["isEnable","isUseWifi","isConnected"])
 
     def refreshWifiList(self):
         """
@@ -867,7 +882,11 @@ class camBase(object):
     def getLog(self, offset=None, count=None):
         return self.sendcommand("getLog", {"offset": offset, "count":count} )
 
+    def getPortInfo(self):
+        return self.sendcommand("getPortInfo")
 
+    def setPortInfo(self,webPort, mediaPort, httpsPort, onvifPort):
+        return self.sendcommand("setPortInfo", param = {"webPort": webPort, "mediaPort": mediaPort, "httpsPort": httpsPort, "onvifPort": onvifPort})
 class cam(camBase):
     """ extended interface
 
@@ -960,7 +979,6 @@ class cam(camBase):
             self.setOsdMask(isEnableOSDMask = False)
 
     def getWifiList_proc(self):
-        encryptType = {"0": "open mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2" }
         def toBool(s):
             return s != "0"
         def conv(s):
@@ -973,7 +991,7 @@ class cam(camBase):
                 "mac": ma.group(2),
                 "quality": int(ma.group(3)),
                 "encrypted": toBool(ma.group(4)),
-                "encryption": encryptType.get(ma.group(5),"enctype %s" % ma.group(5))
+                "encryption": DC_WifiEncryption.get(ma.group(5),"enctype %s" % ma.group(5))
             }
 
         res = self.getWifiList()
@@ -984,9 +1002,17 @@ class cam(camBase):
             res.collectArray("ap","_ap", convertFunc = conv)
             bigarray += res._ap
             offset += 10
+            res.stringLookupConv(res.encryptType,DC_WifiEncryption,"_encryptType")
+            res.stringLookupConv(res.authType, DC_WifiAuth,"_authType")
             res = self.getWifiList(startNo=offset)
         res.set("_ap",bigarray)
 
+        return res
+
+    def getWifiConfig_proc(self):
+        res = self.getWifiConfig()
+        res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
+        res.stringLookupConv(res.authMode, DC_WifiAuth, "_authMode")
         return res
 
     # this function sets WPA config only
@@ -1004,9 +1030,9 @@ class cam(camBase):
         _linkage: array of alarm action
         """
 
-        _motionDetectSensitivity = {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"}
+
         res = self.getMotionDetectConfig()
-        res.stringLookupSet(res.sensitivty,_motionDetectSensitivity,"_sensitivity")
+        res.stringLookupConv(res.sensitivity,DC_motionDetectSensitivity,"_sensitivity")
 
         res.collectBinaryArray("schedule","_schedules",48)
         res.collectBinaryArray("area","_areas",10)

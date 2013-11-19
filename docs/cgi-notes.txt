@@ -46,3 +46,9 @@ Log type:
   3 Login
   4 Logout
   5 User offline
+
+getPortInfo
+- additional result: onvifPort
+
+setPortInfo
+- additional parameter: onvifPort (default 888)

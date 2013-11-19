@@ -156,6 +156,11 @@ def long2ip(w):
     """
     return socket.inet_ntoa(struct.pack('<L', w))
 
+def emptyStringNone(s):
+    if s is None: return None
+    if s == "": return None
+    return s
+
 class resultObj(object):
     """
     create a resultObject from the XML data returned by the camera.
@@ -204,6 +209,18 @@ class resultObj(object):
         """ create (or override) attribute name with value
         """
         self.data[name] = value
+
+    def extendedResult(self, name):
+        """ override "result", if main result is 0, but subresult is not
+        .. note:: make subresult value positive to distinguish it from main result
+        """
+        if self.result != 0: return
+        subresult = self.get(name)
+        if subresult is None: return
+        try:
+            self.set("result", abs(int(subresult)))
+        except ValueError:
+            self.set("result", subresult)
 
     def stringLookupSet(self,value, dict, name):
         """ lookup a string in dict and set named attribute accordingly
@@ -683,6 +700,21 @@ class camBase(object):
     def ptzGetCruiseMapInfo(self,name):
         return self.sendcommand("ptzGetCruiseMapInfo", {"name": name} )
 
+    def ptzSetCruiseMap(self, name, points):
+        param = {"name": name}
+        param.update(array2dict(points,"point"))
+        return self.sendcommand("ptzSetCruiseMap", param = param)
+
+    def ptzDelCruiseMap(self, name):
+        return self.sendcommand("ptzDelCruiseMap", param = {"name": name})
+
+    def ptzStartCruise(self, mapName):
+        return self.sendcommand("ptzStartCruise", param = {"mapName": mapName})
+
+    def ptzStopCruise(self):
+        return self.sendcommand("ptzStopCruise")
+
+
     def getDevState(self):  return self.sendcommand("getDevState")
     def getSnapConfig(self):
         return self.sendcommand("getSnapConfig")
@@ -992,6 +1024,28 @@ class cam(camBase):
             offset += 10
             res = self.getLog(offset=offset)
         res.set("_log",bigarray)
+        return res
+
+    def ptzGetCruiseMapList_proc(self):
+        res = self.ptzGetCruiseMapList()
+        res.collectArray("map","_maps", convertFunc = emptyStringNone)
+        res.extendedResult("getResult")
+        return res
+
+    def ptzGetCruiseMapInfo_proc(self,name):
+        res = self.ptzGetCruiseMapInfo(name)
+        res.collectArray("point","_points", convertFunc = emptyStringNone)
+        res.extendedResult("getResult")
+        return res
+
+    def ptzSetCruiseMap_proc(self,name, points):
+        res = self.ptzSetCruiseMap(name,points)
+        res.extendedResult("setResult")
+        return res
+
+    def ptzStartCruise_proc(self,mapName):
+        res = self.ptzStartCruise(mapName)
+        res.extendedResult("startResult")
         return res
 
 if __name__ == "__main__":

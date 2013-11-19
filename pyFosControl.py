@@ -585,6 +585,40 @@ class camBase(object):
     def getPTZSpeed(self): return self.sendcommand("getPTZSpeed")
     def setPTZSpeed(self,speed): return self.sendcommand("setPTZSpeed", {"speed": speed} )
 
+    def getPTZSelfTestMode(self): return self.sendcommand("getPTZSelfTestMode")
+
+    def setPTZSelfTestMode(self, mode): return self.sendcommand("setPTZSelfTestMode", param = {"mode": mode})
+
+    def getPTZPrePointForSelfTest(self): return self.sendcommand("getPTZPrePointForSelfTest")
+
+    def setPTZPrePointForSelfTest(self, name): return self.sendcommand("setPTZPrePointForSelfTest", param = {"name": name})
+
+    def get485Info(self): return self.sendcommand("get485Info")
+
+    def set485Info(self,rs485Protocol,rs485Addr, rs485Baud, rs485DataBit, rs485StopBit, rs485Check):
+        param = {"rs485Protocol": rs485Protocol,
+                 "rs485Addr": rs485Addr,
+                 "rs485Baud": rs485Baud,
+                 "rs485DataBit": rs485DataBit,
+                 "rs485StopBit": rs485StopBit,
+                 "rs485Check": rs485Check}
+
+        return self.sendcommand("set485Info", param = param)
+
+    def getIPInfo(self): return self.sendcommand("getIPInfo", doBool=["isDHCP"])
+
+    def setIPInfo(self,isDHCP, ip, gate, mask, dns1, dns2):
+        """
+        .. note:: system will reboot after successful completion
+        """
+        param = {"isDHCP": isDHCP,
+                 "ip": ip,
+                 "gate": gate,
+                 "mask": mask,
+                 "dns1": dns1,
+                 "dns2": dns2}
+        return self.sendcommand("setIpInfo", param = param, doBool=["isDHCP"])
+
 
     def zoomIn(self):   return self.sendcommand("zoomIn")
     def zoomOut(self):  return self.sendcommand("zoomOut")

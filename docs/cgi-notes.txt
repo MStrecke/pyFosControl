@@ -35,3 +35,13 @@ setAlarmRecordConfig
 - check return result: -1 = error
 - preRecordSecs seems to be limited to 5
 - alarmRecordSecs seems to be limited to 60
+
+getLog
+- call without parameters returns position 1..10
+- IP address is stored in little Endian (NOT the normal network order)
+Log type:
+  0 System startup
+  1 ?
+  2 ?
+  3 Login
+  4 Logout

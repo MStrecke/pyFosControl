@@ -7,6 +7,7 @@ import xml.dom.minidom
 import re
 import ConfigParser
 import struct, socket
+import datetime
 
 def encode_multipart(fields, files, boundary=None):
     """
@@ -148,12 +149,12 @@ def binaryarray2int(source):
 def ip2long(ip):
     """ Convert an IP string to long
     """
-    return struct.unpack("!L", socket.inet_aton(ip))[0]
+    return struct.unpack("<L", socket.inet_aton(ip))[0]
 
 def long2ip(w):
     """ Convert long in to ip string
     """
-    return socket.inet_ntoa(struct.pack('!L', w))
+    return socket.inet_ntoa(struct.pack('<L', w))
 
 class resultObj(object):
     """
@@ -218,6 +219,7 @@ class resultObj(object):
          :param getparname: parameter prefix to scan in resultObj
          :param setparname: name of the parameter the result is stored into
          :param convertFunc: function to be use on the data before storing it, or None
+         .. note:: if convertFunc returns None, the result is not stored
         """
         res = []
         cnt = 0
@@ -228,7 +230,9 @@ class resultObj(object):
             if convertFunc is None:
                 res.append(p)
             else:
-                res.append(convertFunc(p))
+                cp = convertFunc(p)
+                if not cp is None:
+                    res.append(cp)
         if res != []:
             self.set(setparname,res)
 
@@ -782,6 +786,10 @@ class camBase(object):
         param.update(ips)
         return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
 
+    def getLog(self, offset=None, count=None):
+        return self.sendcommand("getLog", {"offset": offset, "count":count} )
+
+
 class cam(camBase):
     """ extended interface
 
@@ -945,6 +953,43 @@ class cam(camBase):
         param.update(ips)
         return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
 
+    def getLog_proc(self):
+        logtype = {"0": "System startup", "3": "Login", "4": "Logout"}
+        def conv(s):
+            """ convert log entry
+            :param s: single entry from log
+            :returns: returns the decoded entry, or None if the entry is empty, or the
+                      original line, if it doesn't fit the format
+
+            Example: 1384857415+admin+1929423040+4
+            - the first number is a unix time stamp
+            - followed by the user name
+            - followed by the IP (stored in little endian)
+            - followed by log type
+            """
+
+            if s == "": return None
+            ma = re.search("^(\d+)\+(.+?)\+(\d+)\+(\d+)$", s)
+            if ma is None: return s
+
+            return (
+                datetime.datetime.fromtimestamp(int(ma.group(1))),
+                ma.group(2),
+                long2ip(int(ma.group(3))),
+                logtype.get(ma.group(4),"type %s" % ma.group(4))
+            )
+        res = self.getLog()
+        total = int(res.totalCnt)
+        curcnt = int(res.curCnt)
+        offset = 0
+        bigarray = []
+        while offset < total:
+            res.collectArray("log","_log", convertFunc = conv)
+            bigarray += res._log
+            offset += 10
+            res = self.getLog(offset=offset)
+        res.set("_log",bigarray)
+        return res
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

@@ -629,6 +629,15 @@ class camBase(object):
 
     def getWifiConfig(self): return self.sendcommand("getWifiConfig")
 
+    def refreshWifiList(self):
+        """
+        .. note:: action can take about 20 secs
+        """
+        return self.sendcommand("refreshWifiList")
+
+    def getWifiList(self, startNo = None):
+        return self.sendcommand("getWifiList", param = {"startNo": startNo})
+
     def rebootSystem(self):
         return self.sendcommand("rebootSystem")
 
@@ -949,6 +958,36 @@ class cam(camBase):
             # send the command twice
             # a single call does not switch it off reliably
             self.setOsdMask(isEnableOSDMask = False)
+
+    def getWifiList_proc(self):
+        encryptType = {"0": "open mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2" }
+        def toBool(s):
+            return s != "0"
+        def conv(s):
+            if s == "": return None
+            ma = re.search("(.+)\+(.+?)\+(\d+)\+(\d+)\+(\d+)$", s)
+            if ma is None: return s
+
+            return {
+                "sid": ma.group(1),
+                "mac": ma.group(2),
+                "quality": int(ma.group(3)),
+                "encrypted": toBool(ma.group(4)),
+                "encryption": encryptType.get(ma.group(5),"enctype %s" % ma.group(5))
+            }
+
+        res = self.getWifiList()
+        total = int(res.totalCnt)
+        offset = 0
+        bigarray = []
+        while offset < total:
+            res.collectArray("ap","_ap", convertFunc = conv)
+            bigarray += res._ap
+            offset += 10
+            res = self.getWifiList(startNo=offset)
+        res.set("_ap",bigarray)
+
+        return res
 
     # this function sets WPA config only
     def setWifiSettingWPA(self, enable, useWifi, ap, encr, psk, auth):

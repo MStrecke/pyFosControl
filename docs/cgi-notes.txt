@@ -45,3 +45,4 @@ Log type:
   2 ?
   3 Login
   4 Logout
+  5 User offline

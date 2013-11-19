@@ -776,6 +776,9 @@ class camBase(object):
         r = self.sendcommand("logOut", param )
         return r
 
+    def usrBeatHeart(self, usrName, remoteIp=None, groupId=None):
+        return self.sendcommand("usrBeatHeart", param={"usrName": usrName, "remoteIp":remoteIp, "groupId":groupId})
+
     def getFirewallConfig(self):
         return self.sendcommand("getFirewallConfig", doBool=["isEnable"])
 
@@ -954,7 +957,7 @@ class cam(camBase):
         return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
 
     def getLog_proc(self):
-        logtype = {"0": "System startup", "3": "Login", "4": "Logout"}
+        logtype = {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"}
         def conv(s):
             """ convert log entry
             :param s: single entry from log

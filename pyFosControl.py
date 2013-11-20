@@ -118,7 +118,6 @@ class DictBits(object):
 
 # same for: motion detection, IO alarm
 BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
-MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
 
 class DictChar(object):
     def __init__(self,dict):
@@ -137,14 +136,10 @@ class DictChar(object):
         :throws: ValueError if value could not be found
         . note:: this way the URL parameter could be set by either cleartext or the key
         """
-        print v
-        print self.keys
-        print self.values
         if v in self.keys: return v
         if not v in self.values: raise ValueError,"option %s not found" % v
         k = [key for key,value in self.items if value==v ][0]
         return k
-
 
 DC_WifiEncryption = DictChar( {"0": "Open Mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2"} )
 DC_WifiAuth = DictChar( {"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
@@ -152,6 +147,7 @@ DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", 
 DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
 DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
 DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
+
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
     :param keyprefix: key prefix used in the dict

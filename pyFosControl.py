@@ -151,7 +151,7 @@ DC_WifiAuth = DictChar( {"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
 DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
 DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
 DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
-
+DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
     :param keyprefix: key prefix used in the dict
@@ -167,16 +167,19 @@ def array2dict(source, keyprefix, convertFunc = None):
         count += 1
     return res
 
+def arrayTransform(source, convertFunc):
+    res = []
+    for x in source:
+        res.append(convertFunc(x))
+    return res
+
 def binaryarray2int(source):
     """ helper to convert array with binary strings (e.g. schedules) to integer
 
     :param source: the array with binary strings to convert
     :returns array with integers
     """
-    res = []
-    for x in source:
-        res.append(int(x,2))
-    return res
+    return arrayTransform(source, lambda x: int(x,2))
 
 def ip2long(ip):
     """ Convert an IP string to long
@@ -933,6 +936,7 @@ class cam(camBase):
     - Conversion are usually stored in a parameter with the same name prefixed by "_"
     - Most "extended" functions use the name of the base functions followed by "_proc"
     """
+
     def ptzMove(self, direction):
         """ move camera into given direction or (h)ome
         :param direction:
@@ -953,13 +957,13 @@ class cam(camBase):
         assert not fkt is None,"Invalid ptz direction"
         return fkt()
 
-    def snapPicture_proc(self):
+    def snapPicture(self):
         """ gets a snapshot from the camera
         :returns: (binary data, filename from html) or (None, None) on error
         .. note:: This higher function uses the :func:`snapPicture` API call, as :func:`snapPicture2` is currently
                   limited to 512,000 bytes (bug in firmware)
         """
-        w = self.snapPicture()
+        w = camBase.snapPicture(self)
         # <html><body><img src="../snapPic/Snap_20131027-114838.jpg"/></body></html>
         res = re.search("img src=\"(.+)\"",w)
         if res is None: return (None, None)
@@ -976,18 +980,18 @@ class cam(camBase):
         data = urllib.urlopen(link2).read()
         return (data, fname)
 
-    def getPTZSpeed_proc(self):
-        res = self.sendcommand("getPTZSpeed")
+    def getPTZSpeed(self):
+        res = camBase.getPTZSpeed(self)
         res.stringLookupConv(res.speed, DC_ptzSpeedList, "_speed")
         return res
 
-    def getPTZPresetPointList_proc(self):
+    def getPTZPresetPointList(self):
         """ queries the device for a list of preset points
 
         :return: unsorted python string list
         """
         res = []
-        w = self.getPTZPresetPointList()
+        w = camBase.getPTZPresetPointList(self)
 
         try:
             poicnt = int(w.cnt)
@@ -1016,7 +1020,7 @@ class cam(camBase):
             # a single call does not switch it off reliably
             self.setOsdMask(isEnableOSDMask = False)
 
-    def getWifiList_proc(self):
+    def getWifiList(self):
         def toBool(s):
             return s != "0"
         def conv(s):
@@ -1032,7 +1036,7 @@ class cam(camBase):
                 "encryption": DC_WifiEncryption.get(ma.group(5),"enctype %s" % ma.group(5))
             }
 
-        res = self.getWifiList()
+        res = camBase.getWifiList(self)
         total = int(res.totalCnt)
         offset = 0
         bigarray = []
@@ -1042,13 +1046,13 @@ class cam(camBase):
             offset += 10
             res.stringLookupConv(res.encryptType,DC_WifiEncryption,"_encryptType")
             res.stringLookupConv(res.authType, DC_WifiAuth,"_authType")
-            res = self.getWifiList(startNo=offset)
+            res = camBase.getWifiList(self,startNo=offset)
         res.set("_ap",bigarray)
 
         return res
 
-    def getWifiConfig_proc(self):
-        res = self.getWifiConfig()
+    def getWifiConfig(self):
+        res = camBase.getWifiConfig(self)
         res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
         res.stringLookupConv(res.authMode, DC_WifiAuth, "_authMode")
         return res
@@ -1058,7 +1062,7 @@ class cam(camBase):
         self.setWifiSetting(enable, useWifi, ap, encr, psk, auth,
             1, "", "", "", "", 64, 64, 64, 64)
 
-    def getMotionDetectConfig_proc(self):
+    def getMotionDetectConfig(self):
         """ get motion detection configuration with decoded information
 
         The following information is decoded:
@@ -1068,8 +1072,7 @@ class cam(camBase):
         _linkage: array of alarm action
         """
 
-
-        res = self.getMotionDetectConfig()
+        res = camBase.getMotionDetectConfig(self)
         res.stringLookupConv(res.sensitivity,DC_motionDetectSensitivity,"_sensitivity")
 
         res.collectBinaryArray("schedule","_schedules",48)
@@ -1078,8 +1081,8 @@ class cam(camBase):
 
         return res
 
-    def setMotionDetectConfig_proc(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
-        self.setMotionDetectConfig(
+    def setMotionDetectConfig(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
+        camBase.setMotionDetectConfig(self,
             isEnable,
             BD_alarmAction.toInt(linkage),
             snapInterval,
@@ -1087,8 +1090,8 @@ class cam(camBase):
             binaryarray2int(schedules),
             binaryarray2int(areas) )
 
-    def getSnapConfig_proc(self):
-        res = self.sendcommand("getSnapConfig")
+    def getSnapConfig(self):
+        res = camBase.getSnapConfig(self)
         res.stringLookupSet(res.snapPicQuality,
             {"0":"low", "1": "normal", "2": "high"},
             "_snapPicQuality")
@@ -1097,14 +1100,14 @@ class cam(camBase):
             "_saveLocation")
         return res
 
-    def getIOAlarmConfig_proc(self):
-        res = self.getIOAlarmConfig()
+    def getIOAlarmConfig(self):
+        res = camBase.getIOAlarmConfig(self)
         res.collectBinaryArray("schedule","_schedules",48)
         res.DB_convert2array("linkage","_linkage", BD_alarmAction)
         return res
 
-    def setIOAlarmConfig_proc(self,isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules ):
-        res = self.setIOAlarmConfig(
+    def setIOAlarmConfig(self,isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules ):
+        res = camBase.setIOAlarmConfig(self,
             isEnable,
             BD_alarmAction.toInt(linkage),
             alarmLevel,
@@ -1113,20 +1116,15 @@ class cam(camBase):
             binaryarray2int(schedules) )
         return res
 
-    def getFirewallConfig_proc(self):
-        res =  self.sendcommand("getFirewallConfig", doBool=["isEnable"])
+    def getFirewallConfig(self):
+        res =  camBase.getFirewallConfig(self)
         res.collectArray("ipList","_ipList", convertFunc = lambda x: long2ip(int(x)))
         return res
 
-    def setFirewallConfig_proc(self,isEnable, rule, ipList):
-        param = {"isEnable": isEnable,
-                 "rule": rule}
-        ips = array2dict(ipList, "ipList", convertFunc = lambda x: ip2long(x))
-        param.update(ips)
-        return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
+    def setFirewallConfig(self,isEnable, rule, ipList):
+        return camBase.setFirewallConfig(self, isEnable, rule, arrayTransform(ipList, convertFunc = lambda x: ip2long(x)) )
 
-    def getLog_proc(self):
-        logtype = {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"}
+    def getLog(self):
         def conv(s):
             """ convert log entry
             :param s: single entry from log
@@ -1148,9 +1146,9 @@ class cam(camBase):
                 datetime.datetime.fromtimestamp(int(ma.group(1))),
                 ma.group(2),
                 long2ip(int(ma.group(3))),
-                logtype.get(ma.group(4),"type %s" % ma.group(4))
+                DC_logtype.get(ma.group(4),"type %s" % ma.group(4))
             )
-        res = self.getLog()
+        res = camBase.getLog(self)
         total = int(res.totalCnt)
         curcnt = int(res.curCnt)
         offset = 0
@@ -1159,39 +1157,39 @@ class cam(camBase):
             res.collectArray("log","_log", convertFunc = conv)
             bigarray += res._log
             offset += 10
-            res = self.getLog(offset=offset)
+            res = camBase.getLog(self,offset=offset)
         res.set("_log",bigarray)
         return res
 
-    def ptzGetCruiseMapList_proc(self):
-        res = self.ptzGetCruiseMapList()
+    def ptzGetCruiseMapList(self):
+        res = camBase.ptzGetCruiseMapList(self)
         res.collectArray("map","_maps", convertFunc = emptyStringNone)
         res.extendedResult("getResult")
         return res
 
-    def ptzGetCruiseMapInfo_proc(self,name):
-        res = self.ptzGetCruiseMapInfo(name)
+    def ptzGetCruiseMapInfo(self,name):
+        res = camBase.ptzGetCruiseMapInfo(self, name)
         res.collectArray("point","_points", convertFunc = emptyStringNone)
         res.extendedResult("getResult")
         return res
 
-    def ptzSetCruiseMap_proc(self,name, points):
-        res = self.ptzSetCruiseMap(name,points)
+    def ptzSetCruiseMap(self,name, points):
+        res = camBase.ptzSetCruiseMap(self,name,points)
         res.extendedResult("setResult")
         return res
 
-    def ptzStartCruise_proc(self,mapName):
-        res = self.ptzStartCruise(mapName)
+    def ptzStartCruise(self,mapName):
+        res = camBase.ptzStartCruise(self, mapName)
         res.extendedResult("startResult")
         return res
 
-    def getDDNSConfig_proc(self):
-        res = self.getDDNSConfig()
+    def getDDNSConfig(self):
+        res = camBase.getDDNSConfig(self)
         res.stringLookupConv(res.ddnsServer, DC_ddnsServer, "_ddnsServer")
         return res
 
-    def setDDNSConfig_proc(self,isEnable, hostName, ddnsServer, user, password):
-        return self.setDDNSConfig(isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
+    def setDDNSConfig(self,isEnable, hostName, ddnsServer, user, password):
+        return camBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
 
 
 if __name__ == "__main__":

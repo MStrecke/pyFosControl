@@ -123,13 +123,34 @@ MD_sensitivity = DictBits( {"0": "low", "1": "normal", "2": "high", "3": "lower"
 class DictChar(object):
     def __init__(self,dict):
         self.dict = dict
+        self.keys = dict.keys()
+        self.values = dict.values()
+        self.items = dict.items()
+
     def get(self, char, default = None):
         return self.dict.get(char,default)
+
+    def lookup(self, v):
+        """ lookup value in keys and items of the dict and return the key
+        :param v: value to look up
+        :returns: the key
+        :throws: ValueError if value could not be found
+        . note:: this way the URL parameter could be set by either cleartext or the key
+        """
+        print v
+        print self.keys
+        print self.values
+        if v in self.keys: return v
+        if not v in self.values: raise ValueError,"option %s not found" % v
+        k = [key for key,value in self.items if value==v ][0]
+        return k
+
 
 DC_WifiEncryption = DictChar( {"0": "Open Mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2"} )
 DC_WifiAuth = DictChar( {"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
 DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
-
+DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
+DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
 
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
@@ -887,6 +908,24 @@ class camBase(object):
 
     def setPortInfo(self,webPort, mediaPort, httpsPort, onvifPort):
         return self.sendcommand("setPortInfo", param = {"webPort": webPort, "mediaPort": mediaPort, "httpsPort": httpsPort, "onvifPort": onvifPort})
+
+    def getUPnPConfig(self):
+        return self.sendcommand("getUPnPConfig", doBool=["isEnable"])
+
+    def setUPnPConfig(self, enable):
+        return self.sendcommand("setUPnPConfig", param = {"isEnable": enable}, doBool=["isEnable"])
+
+    def getDDNSConfig(self):
+        return self.sendcommand("getDDNSConfig", doBool=["isEnable"])
+
+    def setDDNSConfig(self, isEnable, hostName, ddnsServer, user, password):
+        param = {"isEnable": isEnable,
+                 "hostName": hostName,
+                 "ddnsServer": ddnsServer,
+                 "user": user,
+                 "password": password}
+        return self.sendcommand("setDDNSConfig", param=param, doBool=["isEnable"])
+
 class cam(camBase):
     """ extended interface
 
@@ -938,9 +977,8 @@ class cam(camBase):
         return (data, fname)
 
     def getPTZSpeed_proc(self):
-        _ptzSpeedList = {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'}
         res = self.sendcommand("getPTZSpeed")
-        res.stringLookupSet(res.speed, _ptzSpeedList, "_speed")
+        res.stringLookupConv(res.speed, DC_ptzSpeedList, "_speed")
         return res
 
     def getPTZPresetPointList_proc(self):
@@ -1146,6 +1184,15 @@ class cam(camBase):
         res = self.ptzStartCruise(mapName)
         res.extendedResult("startResult")
         return res
+
+    def getDDNSConfig_proc(self):
+        res = self.getDDNSConfig()
+        res.stringLookupConv(res.ddnsServer, DC_ddnsServer, "_ddnsServer")
+        return res
+
+    def setDDNSConfig_proc(self,isEnable, hostName, ddnsServer, user, password):
+        return self.setDDNSConfig(isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
+
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

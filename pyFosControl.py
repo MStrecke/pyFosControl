@@ -149,6 +149,9 @@ DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed',
 DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
 DC_FtpMode = DictChar( {"0": "PASV", "1": "PORT" })
 DC_SmtpTlsMode = DictChar( {"0": "None", "1": "TLS", "2": "STARTTLS" })
+DC_timeSource = DictChar( {"0": "NTP server", "1": "manually"})
+DC_timeDateFormat = DictChar( {"0": "YYYY-MM-DD", "1": "DD/MM/YYYY", "2": "MM/DD/YYYY"} )
+DC_timeFormat = DictChar( {"0": "12 hours", "1": "24 hours" } )
 
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
@@ -971,6 +974,25 @@ class camBase(object):
                   "password": password }
         return self.sendcommand("smtpTest", param = param, doBool= ["isNeedAuth"] )
 
+    def getSystemTime(self):
+        return self.sendcommand("getSystemTime", doBool=["isDst"] )
+
+    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour, min, sec ):
+        param = { "timeSource": timeSource,
+                  "ntpServer": ntpServer,
+                  "dateFormat": dateFormat,
+                  "timeFormat": timeFormat,
+                  "timeZone": timeZone,
+                  "isDst": isDst,
+                  "dst": dst,
+                  "year": year,
+                  "month": month,
+                  "day": day,
+                  "hour": hour,
+                  "min": min,
+                  "sec": sec}
+        return self.sendcommand("setSystemTime", param = param, doBool=["isDst"])
+
 class cam(camBase):
     """ extended interface
 
@@ -1260,6 +1282,22 @@ class cam(camBase):
         res = camBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password )
         res.extendedResult("testResult")
         return res
+
+    def getSystemTime(self):
+        res = camBase.getSystemTime(self)
+        res.stringLookupConv(res.timeSource, DC_timeSource, "_timeSource")
+        res.stringLookupConv(res.dateFormat, DC_timeDateFormat, "_dateFormat")
+        res.stringLookupConv(res.timeFormat, DC_timeFormat, "_timeFormat")
+        return res
+
+    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour, min, sec ):
+        return camBase.setSystemTime(self,
+            DC_timeSource.lookup(timeSource),
+            ntpServer,
+            DC_timeDateFormat.lookup(dateFormat),
+            DC_timeFormat.lookup(timeFormat),
+            timeZone, isDst, dst, year, month, day, hour, min, sec)
+
 
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()

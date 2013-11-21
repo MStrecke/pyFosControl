@@ -58,3 +58,7 @@ xxxSMTPConfig
 
 smtpTest
 - additional parameter "errorMsg"
+
+setSystemTime
+- it seems you can set everything
+- note sign change in the time zone: GMT+1 = -3600

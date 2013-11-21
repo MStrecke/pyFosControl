@@ -147,6 +147,7 @@ DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", 
 DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
 DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
 DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
+DC_FtpMode = DictChar( {"0": "PASV", "1": "PORT" })
 
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
@@ -925,6 +926,25 @@ class camBase(object):
                  "password": password}
         return self.sendcommand("setDDNSConfig", param=param, doBool=["isEnable"])
 
+    def getFTPConfig(self):
+        return self.sendcommand("getFtpConfig")
+
+    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password ):
+        param = { "ftpAddr": ftpAddr,
+                  "ftpPort": ftpPort,
+                  "mode": mode,
+                  "userName": userName,
+                  "password": password}
+        return self.sendcommand("setFtpConfig", param = param )
+
+    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password ):
+        param = { "ftpAddr": ftpAddr,
+                  "ftpPort": ftpPort,
+                  "mode": mode,
+                  "userName": userName,
+                  "password": password}
+        return self.sendcommand("testFtpServer", param = param )
+
 class cam(camBase):
     """ extended interface
 
@@ -1187,7 +1207,18 @@ class cam(camBase):
     def setDDNSConfig(self,isEnable, hostName, ddnsServer, user, password):
         return camBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
 
+    def getFTPConfig(self):
+        res = camBase.getFTPConfig(self)
+        res.stringLookupConv(res.mode, DC_FtpMode, "_mode")
+        return res
 
+    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password ):
+        return camBase.setFTPConfig(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode),userName, password)
+
+    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password ):
+        res = camBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode),userName, password)
+        res.extendedResult("testResult")
+        return res
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()
 

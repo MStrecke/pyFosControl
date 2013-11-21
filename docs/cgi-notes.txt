@@ -52,3 +52,9 @@ getPortInfo
 
 setPortInfo
 - additional parameter: onvifPort (default 888)
+
+xxxSMTPConfig
+- Note: Misspelling: "reciever"
+
+smtpTest
+- additional parameter "errorMsg"

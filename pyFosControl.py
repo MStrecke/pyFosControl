@@ -148,6 +148,7 @@ DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "
 DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
 DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
 DC_FtpMode = DictChar( {"0": "PASV", "1": "PORT" })
+DC_SmtpTlsMode = DictChar( {"0": "None", "1": "TLS", "2": "STARTTLS" })
 
 def array2dict(source, keyprefix, convertFunc = None):
     """ convert an array to dict
@@ -945,6 +946,31 @@ class camBase(object):
                   "password": password}
         return self.sendcommand("testFtpServer", param = param )
 
+    def getSMTPConfig(self):
+        return self.sendcommand("getSMTPConfig", doBool= ["isEnable", "isNeedAuth"])
+
+
+    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver ):
+        param = { "isEnable": isEnable,
+                  "server": server,
+                  "port": port,
+                  "isNeedAuth": isNeedAuth,
+                  "tls": tls,
+                  "user": user,
+                  "password": password,
+                  "sender": sender,
+                  "reciever": receiver }
+        return self.sendcommand("setSMTPConfig", param = param, doBool= ["isEnable", "isNeedAuth"] )
+
+    def SMTPTest(self, server, port, isNeedAuth, tls, user, password ):
+        param = { "server": server,
+                  "port": port,
+                  "isNeedAuth": isNeedAuth,
+                  "tls": tls,
+                  "user": user,
+                  "password": password }
+        return self.sendcommand("smtpTest", param = param, doBool= ["isNeedAuth"] )
+
 class cam(camBase):
     """ extended interface
 
@@ -1219,6 +1245,22 @@ class cam(camBase):
         res = camBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode),userName, password)
         res.extendedResult("testResult")
         return res
+
+    def getSMTPConfig(self):
+        res = camBase.getSMTPConfig(self)
+        res.stringLookupConv(res.tls, DC_SmtpTlsMode, "_tls")
+        return res
+
+    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver ):
+        if type(receiver) == list:
+            receiver = ";".join(receiver)
+        return camBase.setSMTPConfig(self,isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver)
+
+    def SMTPTest(self, server, port, isNeedAuth, tls, user, password ):
+        res = camBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password )
+        res.extendedResult("testResult")
+        return res
+
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()
 

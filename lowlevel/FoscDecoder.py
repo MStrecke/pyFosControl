@@ -3,23 +3,92 @@
 
 import struct
 
-def printhex(s, info=""):
+def printhex(data, info="", highlight=[]):
     """ output string as hex and ASCII dump
+    :param data: binary data
+    :param info: info string to print in header
+    :param highlight: if position (starting with 0) is in this array, print highlight
     """
+    HL_ON = '\033[43m'
+    HL_OFF = '\033[0m'
+
+    if type(highlight) != list:
+        highlight = []
+
     start = 0
-    dlen = len(s)
+    dlen = len(data)
     if info!="": info += " - "
     print "%slength: %s" % (info, dlen)
     while start < dlen:
-        sub = s[start:start+16]
+        sub = data[start:start+16]
         slen = len(sub)
 
-        xc = " ".join( [c.encode("hex") for c in sub])
+        if highlight == []:
+            xc = " ".join( [c.encode("hex") for c in sub])
+        else:
+            pos = 0
+            w = []
+            ison = False
+            for c in sub:
+                st = ""
+                hx = c.encode("hex")
+                if (start+pos) in highlight:
+                    if not ison:
+                        st += HL_ON
+                        ison = True
+                    st += hx
+                    if (pos==15) or not (start+1+pos) in highlight:
+                        st += HL_OFF
+                        ison = False
+                    w.append( st )
+                else:
+                    w.append( hx )
+                pos += 1
+            xc = " ".join(w)
+
         padding = ((16-slen)*3)*" "
         cs = "".join( c if (ord(c) >= 32) and (ord(c) < 128) else '.' for c in sub)
         print "%04x: %s%s  %s" % (start, xc, padding, cs)
 
         start += 16
+
+class datacompare(object):
+    """ class to compare data blocks
+
+    dc = datacompare()
+    dc.put( datablock1 )
+    dc.put( datablock2 )
+    dc.put( datablock3 )
+    dc.stats()
+    """
+    def __init__(self):
+        self.basedata = None
+        self.allequal = True
+        self.count = 0
+
+    def put(self,data):
+        self.count += 1
+        if self.basedata is None:
+            self.basedata = data
+            return []
+        if len(self.basedata) != len(data):
+            self.allequal = False
+            return -1
+        if self.basedata == data:
+            return []
+        self.allequal = False
+        diff = []
+        for x in range(len(data)):
+            if data[x] != self.basedata[x]:
+                diff.append(x)
+        return diff
+
+    def stats(self):
+        if self.count > 0:
+            print "Number of data blocks:", self.count
+            if not self.basedata is None:
+                if self.allequal:
+                    print "*** All data blocks were identical"
 
 def unpack(fmt,data):
     """ convenience unpack method
@@ -462,7 +531,10 @@ decoder_list = [
             foss_cmd_112(),
             foss_cmd_113()
         ]
+
 decoder_descriptions = { subd.cmd_no(): subd.description() for subd in decoder_list}
 decoder_call = { subd.cmd_no(): subd.decode for subd in decoder_list}
 
+# Give the decoder some means to analyse the packets
+datacomp = datacompare()
 

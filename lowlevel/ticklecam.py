@@ -11,7 +11,10 @@ import FoscDecoder
 def proc(cmd,size,body):
     """ try to use decoder subroutines
     """
+
     print "Incoming cmd: %s, size %s" % (cmd,size)
+
+    # Let's check all
 
     decoder = FoscDecoder.decoder_call.get(cmd)
     if decoder is None:
@@ -309,7 +312,6 @@ except socket.timeout:
     print "Connection failed"
     sys.exit(1)
 
-
 testprogram = [
     ( spush.start_serverpush, () ),                    # start connection
     ( spush.send_cmd12, (username,password,uid)),      # Login
@@ -355,3 +357,4 @@ finally:
 # Display the UID used
 print "\n** uid: %08x" % uid
 FoscDecoder.closeAudioDumpFile()
+FoscDecoder.datacomp.stats()

@@ -338,29 +338,38 @@ if __name__=='__main__':
      If not started in live mode, it analyses the file defined in recfile.
     """
 
+    # change according to your environment
+    camera_ip = "192.168.0.102"
+    # device to sniff
+    pcap_device = "eth0"
+
+    # file name to store captured file in live mode
+    recfile = "test4.pcap"
+    # filename of capture file to analyse
+    playfile = recfile
+    # audio dump filename
+    audiodumpfilename = None
+
+    # if the first parameter on the command line is "live", switch to live mode
     try:
         if sys.argv[1] == "live":
             live = True
     except IndexError:
         live = False
 
-    if live: print "Live mode"
+    verbose = not live
+    # verbose = True
 
-    verbose = True
-    camera_ip = "192.168.0.102"
-    recfile = "test4.pcap"
-    playfile = recfile
-
-    if live:
-        verbose = False
-
-    verbose = True
-    audiodump = None # open("/tmp/audio.bin","wb")
+    # open a file for the content of packet 27
+    if audiodumpfilename is None:
+        audiodump = None
+    else:
+        audiodump = open(audiodumpfilename,"wb")
 
     if live:
         # note: live_source usually needs root permissions
         ana = live_source(fosc_analyser,
-                          device = "eth0",         # "wlan1", ...
+                          device = pcap_device,    # "wlan1", ...
                           filter = None,           # "ip host 192.168.0.102", or None
                           filename = recfile       # dump to file, or None
                         )

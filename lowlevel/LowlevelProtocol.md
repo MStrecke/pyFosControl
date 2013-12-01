@@ -30,6 +30,8 @@ To use the low level protocol connect to port 88 or 443 (or presumably any other
 
 **Note:** This communication is **not** encrypted.
 
+The camera will close an idle connection after 60 secs. (I.e. use command 15 for a Noop action).
+
 ### Start
 
 In order to start the communication send the following HTTP 1.1 request to the camera:

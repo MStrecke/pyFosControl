@@ -35,11 +35,31 @@ def toBool(s):
     """ convenience function to convert byte to Boolean
     :param s: input byte
     :returns: tuple (boolean, error)
-    ..note:: checks that only 0x00 and 0x01 are use
+    ..note:: throws ValueError in byte is not 0 or 1
     """
-    if s == 0: return False, None
-    if s == 1: return True, None
-    return None,"invalid value for boolean"
+    if s == 0: return False
+    if s == 1: return True
+    raise ValueError,"invalid value for boolean: %s" % s
+
+def toString(s):
+    """ function to extract a string from a buffer padded with zeroes
+    :param s: input bytes
+    :returns: cleaned string
+    .. note:: throws ValueError, if padding is not zero
+    """
+    res = ""
+
+    mode = 0
+    for c in s:
+        if mode == 0:
+            if ord(c) == 0:
+                mode == 1
+            else:
+                res += c
+        elif mode == 1:
+            if ord(c) != 0:
+                raise ValueError,"string padding not zero"
+    return res
 
 
 class foss_cmd_decode(object):
@@ -309,29 +329,17 @@ class foss_cmd_108(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, mirror, flip = struct.unpack("<I4sIBB", data)
         print mirror, flip
-        mirror_fl, error = toBool(mirror)
-        if not error is None: return error
-        flip_fl, error = toBool(flip)
-        if not error is None: return error
+        try:
+            mirror_fl, error = toBool(mirror)
+            if not error is None: return error
+            flip_fl, error = toBool(flip)
+            if not error is None: return error
 
-        print "mirror %s, flip %s" % (mirror_fl, flip_fl)
+            print "mirror %s, flip %s" % (mirror_fl, flip_fl)
+        except ValueError, e:
+            print "*** Decode error: %s" % e.message
         printhex(data)
         return None
-
-def toString(s):
-    res = ""
-
-    mode = 0
-    for c in s:
-        if mode == 0:
-            if ord(c) == 0:
-                mode == 1
-            else:
-                res += c
-        elif mode == 1:
-            if ord(c) != 0:
-                raise ValueError,"padding not zero"
-    return res
 
 class foss_cmd_100(foss_cmd_decode):
     """
@@ -358,18 +366,21 @@ class foss_cmd_100(foss_cmd_decode):
                "B32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s" +
                 "B32s32s32s32s32s32s32s32s32s92s12s", data)
 
-        presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
-        presets = [ toString(p) for p in presets]
-        walks = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
-        walks = [ toString(w) for w in walks]
+        try:
+            presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
+            presets = [ toString(p) for p in presets]
+            walks = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
+            walks = [ toString(w) for w in walks]
 
-        printhex(res2)
+            printhex(res2)
 
-        print "Number of preset points",numPr
-        print "Names of presets:",presets
-        print "Number of cruises:", numW
-        print "Name of cruises:",walks
-        print "Camera ID:",cameraid
+            print "Number of preset points",numPr
+            print "Names of presets:",presets
+            print "Number of cruises:", numW
+            print "Name of cruises:",walks
+            print "Camera ID:",cameraid
+        except ValueError,e:
+            print "** Decode Error: %s" % e.message
 
 class foss_cmd_110(foss_cmd_decode):
     """

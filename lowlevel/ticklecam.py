@@ -315,7 +315,7 @@ except socket.timeout:
 testprogram = [
     ( spush.start_serverpush, () ),                    # start connection
     ( spush.send_cmd12, (username,password,uid)),      # Login
-    ( (time.sleep, (2,) ) )                            # delay
+    ( (time.sleep, (30,) ) )                            # delay
 ]
 
 """

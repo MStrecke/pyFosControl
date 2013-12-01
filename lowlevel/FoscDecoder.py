@@ -472,6 +472,28 @@ class foss_cmd_110(foss_cmd_decode):
         if denoise != 50: return "denoise changed"
         return None
 
+
+class foss_cmd_111(foss_cmd_decode):
+    """
+    int32 command
+    char4 FOSC
+    int32 size
+    byte brightness
+    byte contrast
+    byte hue
+    byte saturation
+    byte sharpness
+    byte denoiseLevel (nut used, value = 50)
+
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 111, "motion detection alert")
+    def decode(self, data):
+        cmd, magic, size, flags  = struct.unpack("<I4sI4s", data)
+        printhex(flags, "flags")
+        if flags != "\x01\0x00\0x00\0x1e": return "unexpected value"
+        return None
+
 class foss_cmd_112(foss_cmd_decode):
     """
     int32 command
@@ -528,6 +550,7 @@ decoder_list = [
             foss_cmd_108(),
             foss_cmd_100(),
             foss_cmd_110(),
+            foss_cmd_111(),
             foss_cmd_112(),
             foss_cmd_113()
         ]

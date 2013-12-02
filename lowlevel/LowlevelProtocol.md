@@ -133,13 +133,13 @@ The following part only describes the data section.
 
 ## Packet 0 - Video on
 
-| type   | value | description            |
-| ------ | ----: | ---------------------- |
-| byte   |     0 | ?                      |
-| char64 |     X | username               |
-| char64 |     X | password               |
-| int32  |     X | UID                    |
-| res28  |     0 | ?                      |
+| type   | value | description                 |
+| ------ | ----: | --------------------------- |
+| byte   |     0 | videostream (0:main, 1:sub) |
+| char64 |     X | username                    |
+| char64 |     X | password                    |
+| int32  |     X | UID                         |
+| res28  |     0 | ?                           |
 
 ## Packet 1 - close connection
 

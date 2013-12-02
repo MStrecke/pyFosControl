@@ -134,7 +134,7 @@ def toBool(s):
     if s == 1: return True
     raise ValueError,"invalid value for boolean: %s" % s
 
-def toString(s, errorhint = ""):
+def toString(s, hint = ""):
     """ function to extract a string from a buffer padded with zeroes
     :param s: input bytes
     :returns: cleaned string
@@ -209,7 +209,7 @@ class foss_cmd_0(foss_cmd_decode):
     int32  command
     char4  FOSC
     int32  size
-    byte   unknown1 (zero), perhaps # videostream?
+    byte   videostream (0: main, 1:sub)
     char64 username
     char64 password
     int32  uid
@@ -218,15 +218,16 @@ class foss_cmd_0(foss_cmd_decode):
     def __init__(self):
         foss_cmd_decode.__init__(self, 0, "U+P+ID 0")
     def decode(self, data):
-        cmd, magic, size, un1, username, password, uid, padding  = struct.unpack("<I4sIB64s64sI28s", data)
+        cmd, magic, size, vstream, username, password, uid, padding  = struct.unpack("<I4sIB64s64sI28s", data)
 
-        testValue(un1, 0, "field unknown1")
+        if not vstream in [0,1]:
+            raise ValueError,"unknown video stream %s" % vstream
         username = toString(username, hint = "username")
         password = toString(password, hint = "password")
         padding = toString(padding, hint = "padding")
         testEmptyString(padding, "padding")
 
-        print "User/Pass/uid: %s %s %08x" % (username, password, uid)
+        print "User/Pass/uid: %s %s %08x - video stream %s" % (username, password, uid, vstream)
 
 class foss_cmd_2(foss_cmd_decode):
     """

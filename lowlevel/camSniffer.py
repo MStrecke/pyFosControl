@@ -21,14 +21,17 @@ import FoscDecoder
     documented in their SDK.  However, some functions are only available by a low level
     protocol, e.g. the "talk function" (sending audio to the camera).
 
-    For their older models Foscam has published this low level protocol.
+    For their older models Foscam has published the low level protocol.
     As of the time of writing (end 2013) the documents for this model are not (yet?) available.
 
-    The "interesting" packets are TCP/IP packets. Their structure starts with:
+    The "interesting" packets are TCP/IP packets send to and from the IP address of the camera.
+    These are either HTTP requests or packets of the low level protocol.
+
+    The structure of the low level packets is:
 
     int32 commmand     (little endian)
     char4 magic number "FOSC"
-    int32 datalen      length of the data section (I'm already guessing here)
+    int32 datalen      length of the data section
 
     The program allows to analyse either a live capture (and optionally dump the received packets)
     or the packet dump itself (see "main" below).
@@ -38,7 +41,8 @@ import FoscDecoder
     - python-dpkt     for easier access to the IP structure
 
     Note: dpkt doesn't do any stream reassembling, i.e. if can't handle data larger than one packet,
-          e.g. audio or video strams.
+          e.g. audio or video streams. This also means, that this program does miss commands that do
+          not start at the beginning of a TCP packet (which is rare, but it does happen).
 
     Possible live capture scenario:
     - Linux box used as router for a Windows computer
@@ -51,12 +55,15 @@ import FoscDecoder
     This program has not been tested under Windows, but I don't see large difficulties if the
     dependencies are satisfied.
 
-    Known issue:
-    This program only analyzes sniffed tcp packets.  If a command does not start at the begin of a packet (which
-    is rare, but does happen), or data is split into multiple tcp packets (e.g. video or audio data), the decoders
-    will not work correctly.  No attempt has been made to reassemble the packets.
-"""
+    Live capture
+    ============
+    - set-up the dump file (if needed, see section "main").
+    - start with the following command from the command line:
+      sudo python camSniffer.py live
 
+
+    If not started in live mode, the program analyses the file defined in recfile.
+"""
 
 
 def print_src_dest_ip(ip):
@@ -236,11 +243,14 @@ class fosc_analyser(analyser):
 
         def possibledecode(no, data):
             func = self.call.get(cmd, FoscDecoder.printhex)
-            error = func(ip.tcp.data)
-            if not error is None:
+            try:
+                error = func(ip.tcp.data)
+            except BaseException, e:
+                error = e.message
+                print "*** Decode error: "+e.message
+                # Remember # of command for print_stats
                 if not no in self.errors:
                     self.errors.append(no)
-                print error
 
         # call super methode for some housekeeping
         analyser.process_packet(self,pktlen, data, timestamp)
@@ -330,13 +340,6 @@ class fosc_analyser(analyser):
             FoscDecoder.printhex(ip.tcp.data[datalen+12:])
 
 if __name__=='__main__':
-    """ in live mode, you need root privileges
-
-     In order to start the live sniffer, go to the command line and enter:
-     sudo python camSniffer.py live
-
-     If not started in live mode, it analyses the file defined in recfile.
-    """
 
     # change according to your environment
     camera_ip = "192.168.0.102"

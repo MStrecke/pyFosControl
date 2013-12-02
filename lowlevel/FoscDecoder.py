@@ -90,6 +90,30 @@ class datacompare(object):
                 if self.allequal:
                     print "*** All data blocks were identical"
 
+# The following functions test a value and raise a ValueError
+# if the result is not what we expect.
+
+def testValue(value, desired, hint):
+    if value != desired:
+        raise ValueError, "%s: value is not %s: %s" % (hint, desired, value)
+
+def testEmptyString(value, hint):
+    if value != "":
+        raise ValueError, "%s: string is not empty" % hint
+
+def testString(value, desired, hint):
+    if value != desired:
+        printhex(value,  "value....")
+        printhex(desired,"should be")
+        raise ValueError, "%s: string is not empty" % hint
+
+def testNone(value, hint):
+        if value is None:
+            raise ValueError, "%s: shouldn't be None" % hint
+
+# Conversion functions
+# They raise Exceptions in case of errors
+
 def unpack(fmt,data):
     """ convenience unpack method
     :param fmt: struct format string
@@ -110,7 +134,7 @@ def toBool(s):
     if s == 1: return True
     raise ValueError,"invalid value for boolean: %s" % s
 
-def toString(s):
+def toString(s, hint = ""):
     """ function to extract a string from a buffer padded with zeroes
     :param s: input bytes
     :returns: cleaned string
@@ -127,9 +151,14 @@ def toString(s):
                 res += c
         elif mode == 1:
             if ord(c) != 0:
-                raise ValueError,"string padding not zero"
+                errormsg = "string padding not zero"
+                if hint != "":
+                    errormsg += ", %s" % hint
+                raise ValueError, errormsg
     return res
 
+# Decoding functions
+#
 
 class foss_cmd_decode(object):
     """ base decoder object
@@ -154,37 +183,6 @@ class foss_cmd_decode(object):
         printhex(data)
         return None
 
-class foss_cmd_0(foss_cmd_decode):
-    """
-    int32  command
-    char4  FOSC
-    int32  size
-    byte   unknown1 (zero), perhaps # videostream?
-    char64 username
-    char64 password
-    int32  uid
-    char28 unknown (zeros)
-    """
-    def __init__(self):
-        foss_cmd_decode.__init__(self, 0, "U+P+ID 0")
-    def decode(self, data):
-        cmd, magic, size, un1, username, password, uid, padding  = struct.unpack("<I4sIB64s64sI28s", data)
-
-        if un1 != 0: return "unknown1 != 0"
-
-        username, error = unpad(username)
-        if not error is None: return error
-
-        password, error = unpad(password)
-        if not error is None: return error
-
-        padding, error = unpad(padding)
-        if not error is None: return error
-        if padding != "": return "Padding not empty"
-
-        print "User/Pass/uid: %s %s %08x" % (username, password, uid)
-        return None
-
 def unpad(s):
     """ unpad a string from trailing 0x00
         make sure that all trailing zeros are actually zeros
@@ -206,6 +204,30 @@ def unpad(s):
                 error = "padding chars not zero %2x" % ord(c)
     return res, error
 
+class foss_cmd_0(foss_cmd_decode):
+    """
+    int32  command
+    char4  FOSC
+    int32  size
+    byte   videostream (0: main, 1:sub)
+    char64 username
+    char64 password
+    int32  uid
+    char28 unknown (zeros)
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 0, "U+P+ID 0")
+    def decode(self, data):
+        cmd, magic, size, vstream, username, password, uid, padding  = struct.unpack("<I4sIB64s64sI28s", data)
+
+        if not vstream in [0,1]:
+            raise ValueError,"unknown video stream %s" % vstream
+        username = toString(username, hint = "username")
+        password = toString(password, hint = "password")
+        padding = toString(padding, hint = "padding")
+        testEmptyString(padding, "padding")
+
+        print "User/Pass/uid: %s %s %08x - video stream %s" % (username, password, uid, vstream)
 
 class foss_cmd_2(foss_cmd_decode):
     """
@@ -222,20 +244,14 @@ class foss_cmd_2(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, unknown, username, password, padding  = struct.unpack("<I4sIB64s64s32s", data)
 
-        if unknown != 0: return "unknown != 0"
-
-        username, error = unpad(username)
-        if not error is None: return error
-
-        password, error = unpad(password)
-        if not error is None: return error
-
-        padding, error = unpad(padding)
-        if not error is None: return error
-        if padding != "": return "Padding not empty"
+        testValue(unknown, 0, "field unknown")
+        username = toString(username, hint = "username")
+        password = toString(password, hint = "password")
+        padding = toString(padding, hint = "padding")
+        testEmptyString(padding, hint="padding")
 
         print "User/Pass: %s %s" % (username, password)
-        return None
+
 
 class foss_cmd_3(foss_cmd_decode):
     """
@@ -252,20 +268,13 @@ class foss_cmd_3(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, unknown, username, password, padding  = struct.unpack("<I4sIB64s64s32s", data)
 
-        if unknown != 0: return "unknown != 0"
-
-        username, error = unpad(username)
-        if not error is None: return error
-
-        password, error = unpad(password)
-        if not error is None: return error
-
-        padding, error = unpad(padding)
-        if not error is None: return error
-        if padding != "": return "Padding not empty"
+        testValue(unknown,0,"field unknown")
+        username = toString(username, hint = "username")
+        password = toString(password, hint = "password")
+        padding = toString(padding, hint = "padding")
+        testEmptyString(padding, hint="padding")
 
         print "User/Pass: %s %s" % (username, password)
-        return None
 
 class foss_cmd_5(foss_cmd_decode):
     """
@@ -283,18 +292,13 @@ class foss_cmd_5(foss_cmd_decode):
         foss_cmd_decode.__init__(self, 5, "U+P 5")
     def decode(self, data):
         cmd, magic, size, username, password, padding  = struct.unpack("<I4sI64s64s32s", data)
-        username, error = unpad(username)
-        if not error is None: return error
 
-        password, error = unpad(password)
-        if not error is None: return error
-
-        padding, error = unpad(padding)
-        if not error is None: return error
-        if padding != "": return "Padding not empty"
+        username = toString(username, hint = "username")
+        password = toString(password, hint = "password")
+        padding = toString(padding, hint = "padding")
+        testEmptyString(padding, hint="padding")
 
         print "User/Pass: %s %s" % (username, password)
-        return None
 
 class foss_cmd_12(foss_cmd_decode):
     """
@@ -310,18 +314,13 @@ class foss_cmd_12(foss_cmd_decode):
         foss_cmd_decode.__init__(self, 12, "U+P+ID 12")
     def decode(self, data):
         cmd, magic, size, username, password, uid, padding  = struct.unpack("<I4sI64s64sI32s", data)
-        username, error = unpad(username)
-        if not error is None: return error
 
-        password, error = unpad(password)
-        if not error is None: return error
-
-        padding, error = unpad(padding)
-        if not error is None: return error
-        if padding != "": return "Padding not empty"
+        username = toString(username, hint = "username")
+        password = toString(password, hint = "password")
+        padding = toString(padding, hint = "padding")
+        testEmptyString(padding, hint="padding")
 
         print "User/Pass/uid: %s %s %08x" % (username, password, uid)
-        return None
 
 class foss_cmd_15(foss_cmd_decode):
     """
@@ -336,7 +335,18 @@ class foss_cmd_15(foss_cmd_decode):
         cmd, magic, size, uid  = struct.unpack("<I4sII", data)
         print "uid %08x" % uid
         # printhex(data)
-        return None
+
+class foss_cmd_21(foss_cmd_decode):
+    """
+    int32 command
+    char4 FOSC
+    int32 size
+    res36 ???
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 21, "Speaker off reply")
+    def decode(self, data):
+        cmd, magic, size, rdata  = struct.unpack("<I4sI36s", data)
 
 class foss_cmd_27(foss_cmd_decode):
     """
@@ -352,7 +362,6 @@ class foss_cmd_27(foss_cmd_decode):
         foss_cmd_decode.__init__(self, 27, "audio in")
     def decode(self, data):
         cmd, magic, size, hd1, hd2, audiopart  = unpack("<I4sI12s24s32s", data)
-        print len(data), size
         printhex(hd1,"audio-in hd1")
         printhex(hd2,"audio-in hd2")
         asize = size-36
@@ -363,7 +372,6 @@ class foss_cmd_27(foss_cmd_decode):
         if len(data) > 48+asize:
             print "MORE"
             printhex(data[48+asize:])
-        return None
 
 class foss_cmd_29(foss_cmd_decode):
     """
@@ -381,8 +389,7 @@ class foss_cmd_29(foss_cmd_decode):
         elif login == 1:
             print "login: error"
         else:
-            return "Unknown login result value"
-        return None
+            raise ValueError, "Unknown login result value"
 
 class foss_cmd_108(foss_cmd_decode):
     """
@@ -397,18 +404,11 @@ class foss_cmd_108(foss_cmd_decode):
         foss_cmd_decode.__init__(self, 108, "show mirror/flip")
     def decode(self, data):
         cmd, magic, size, mirror, flip = struct.unpack("<I4sIBB", data)
-        print mirror, flip
-        try:
-            mirror_fl, error = toBool(mirror)
-            if not error is None: return error
-            flip_fl, error = toBool(flip)
-            if not error is None: return error
 
-            print "mirror %s, flip %s" % (mirror_fl, flip_fl)
-        except ValueError, e:
-            print "*** Decode error: %s" % e.message
-        printhex(data)
-        return None
+        mirror_fl = toBool(mirror)
+        flip_fl  = toBool(flip)
+
+        print "mirror %s, flip %s" % (mirror_fl, flip_fl)
 
 class foss_cmd_100(foss_cmd_decode):
     """
@@ -435,21 +435,18 @@ class foss_cmd_100(foss_cmd_decode):
                "B32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s" +
                 "B32s32s32s32s32s32s32s32s32s92s12s", data)
 
-        try:
-            presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
-            presets = [ toString(p) for p in presets]
-            walks = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
-            walks = [ toString(w) for w in walks]
+        presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
+        presets = [ toString(p) for p in presets]
+        walks = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
+        walks = [ toString(w) for w in walks]
 
-            printhex(res2)
+        printhex(res2)
 
-            print "Number of preset points",numPr
-            print "Names of presets:",presets
-            print "Number of cruises:", numW
-            print "Name of cruises:",walks
-            print "Camera ID:",cameraid
-        except ValueError,e:
-            print "** Decode Error: %s" % e.message
+        print "Number of preset points",numPr
+        print "Names of presets:",presets
+        print "Number of cruises:", numW
+        print "Name of cruises:",walks
+        print "Camera ID:",cameraid
 
 class foss_cmd_110(foss_cmd_decode):
     """
@@ -469,8 +466,28 @@ class foss_cmd_110(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, bright, contrast, hue, saturation, sharp, denoise  = struct.unpack("<I4sIBBBBBB", data)
         print "bright %s, contrast %s, hue %s, saturation %s, sharp %s, denoise %s" % (bright, contrast, hue, saturation, sharp, denoise)
-        if denoise != 50: return "denoise changed"
-        return None
+        testValue(denoise,50,"denoise value")
+
+
+class foss_cmd_111(foss_cmd_decode):
+    """
+    int32 command
+    char4 FOSC
+    int32 size
+    byte brightness
+    byte contrast
+    byte hue
+    byte saturation
+    byte sharpness
+    byte denoiseLevel (nut used, value = 50)
+
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 111, "motion detection alert")
+    def decode(self, data):
+        cmd, magic, size, flags  = struct.unpack("<I4sI4s", data)
+        printhex(flags, "flags")
+        testString(flags,"\x01\0x00\0x00\0x1e", hint = "flags")
 
 class foss_cmd_112(foss_cmd_decode):
     """
@@ -484,10 +501,8 @@ class foss_cmd_112(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, mode = struct.unpack("<I4sII", data)
         decmode = {0: "60 Hz", 1:"50 Hz", 2: "outdoor"}.get(mode)
-        if decmode is None:
-            return "Unknown pwr freq: %s" % mode
+        testNone(decmode,"Unknown pwr freq %s" % mode)
         print "Power freq.: %s" % decmode
-        return None
 
 class foss_cmd_113(foss_cmd_decode):
     """
@@ -501,7 +516,6 @@ class foss_cmd_113(foss_cmd_decode):
     def decode(self, data):
         cmd, magic, size, stream  = struct.unpack("<I4sII", data)
         print "Stream: %s" % stream
-        return None
 
 
 audiodump = None
@@ -523,11 +537,13 @@ decoder_list = [
             foss_cmd_5(),
             foss_cmd_12(),
             foss_cmd_15(),
+            foss_cmd_21(),
             foss_cmd_27(),
             foss_cmd_29(),
             foss_cmd_108(),
             foss_cmd_100(),
             foss_cmd_110(),
+            foss_cmd_111(),
             foss_cmd_112(),
             foss_cmd_113()
         ]

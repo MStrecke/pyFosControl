@@ -8,19 +8,7 @@ import time
 import sys
 import FoscDecoder
 
-def proc(cmd,size,body):
-    """ try to use decoder subroutines
-    """
 
-    print "Incoming cmd: %s, size %s" % (cmd,size)
-
-    # Let's check all
-
-    decoder = FoscDecoder.decoder_call.get(cmd)
-    if decoder is None:
-        FoscDecoder.printhex(body)
-    else:
-        decoder(struct.pack("<I4sI",cmd,"FOSC",size) + body)
 
 class readthread(Thread):
     """
@@ -42,6 +30,7 @@ class readthread(Thread):
         if not name is None: self.setName(name)
         self.resync_count = 0
         self.read_sequence = []
+        self.decodeerror = []
 
     def run(self):
         # Mode:
@@ -79,7 +68,7 @@ class readthread(Thread):
                     print "remaining",remaining
                     if remaining == 0:
                         mode = 0
-                        proc(cmd,size,body)
+                        self.proc(cmd,size,body)
                 else:
                     data = self.socket.recv(2000)   # clear incoming buffer
                     if len(data) == 0:
@@ -99,10 +88,32 @@ class readthread(Thread):
         # or timeout (i.e. max. 1 sec)
         self.endflag = True
 
+    def proc(self,cmd,size,body):
+        """ try to use decoder subroutines
+        """
+
+        print "Incoming cmd: %s, size %s" % (cmd,size)
+
+        # Let's check all
+        try:
+            decoder = FoscDecoder.decoder_call.get(cmd)
+            if decoder is None:
+                FoscDecoder.printhex(body)
+            else:
+                decoder(struct.pack("<I4sI",cmd,"FOSC",size) + body)
+        except BaseException, e:
+            msg = "cmd %s: %s" % (cmd, e.message)
+            self.decodeerror.append(msg)
+            print "** DECODE ERROR: " + msg
+
     def stats(self):
         print "Sequence of incoming packets:",self.read_sequence
         if self.resync_count > 0:
             print "Fallen out of sync %s time(s)" % self.resync_count
+        if len(self.decodeerror) > 0:
+            print "%s error(s) during decoding:" % len(self.decodeerror)
+            for msg in self.decodeerror:
+                print msg
 
 class tcphandler(object):
     def __init__(self,host,port,name):
@@ -164,7 +175,7 @@ class camhandler(tcphandler):
         int32  uid
         char28 unknown (zeros)
         """
-        print "Video on"
+        print "Sending: Video on"
         data = struct.pack("<x64s64sI28x",name,password,uid)
         self.send_command(0,data)
 
@@ -177,6 +188,7 @@ class camhandler(tcphandler):
         char64 username
         char64 password
         """
+        print "Sending: close connection"
         data = struct.pack("<x64s64s",name,password)
         self.send_command(1,data)
 
@@ -190,7 +202,7 @@ class camhandler(tcphandler):
         char64 password
         char32 unknown (zeros)
         """
-        print "Start audio"
+        print "Sending: Start audio"
         data = struct.pack("<x64s64s32x",name,password)
         self.send_command(2,data)
 
@@ -204,6 +216,7 @@ class camhandler(tcphandler):
         char64 password
         char32 unknown (zeros)
         """
+        print "Sending: Mute audio"
         data = struct.pack("<x64s64s32x",name,password)
         self.send_command(3,data)
 
@@ -218,6 +231,7 @@ class camhandler(tcphandler):
         int32  uid
         char28 unknown (zeros)
         """
+        print "Sending: speaker on"
         data = struct.pack("<x64s64sI28x",name,password,uid)
         self.send_command(4,data)
 
@@ -231,6 +245,7 @@ class camhandler(tcphandler):
         char32 padding (zeros)
         """
 
+        print "Sending: speaker off"
         data = struct.pack("<64s64s32x", name, password)
         self.send_command(5,data)
 
@@ -243,7 +258,7 @@ class camhandler(tcphandler):
                audiodata
         """
 
-        print "Send audio data to cam"
+        print "Sending audio data to cam"
 
         # not working correctly!!
 
@@ -269,6 +284,7 @@ class camhandler(tcphandler):
         int32  uid
         char32 padding (zeros)
         """
+        print "Sending: Login"
         data = struct.pack("<64s64sI32x",name,password,uid)
         self.send_command(12,data)
 
@@ -279,7 +295,7 @@ class camhandler(tcphandler):
         int32 size
         int32 uid
         """
-        print "Login check"
+        print "Sending: Login check"
         data = struct.pack("<I",uid)
         self.send_command(15,data)
 
@@ -288,7 +304,7 @@ class camhandler(tcphandler):
 
         The low level protocol is started by a HTTP request
         """
-        print "Start serverpush"
+        print "Sending: Start serverpush"
         self.sendraw(data = """SERVERPUSH / HTTP/1.1\r\nHost: %s:%s\r\nAccept:*/*\r\nConnection: Close\r\n\r\n\r\n""" % (self.ip, self.port))
 
 # convenience functions for the test program
@@ -325,6 +341,16 @@ def do_audio_stop():
     global username, password
     return ( spush.send_cmd3, (username,password))
 
+def do_speaker_on():
+    global spush
+    global username, password, uid
+    return ( spush.send_cmd4, (username,password, uid))
+
+def do_speaker_off():
+    global spush
+    global username, password
+    return ( spush.send_cmd5, (username,password))
+
 def do_video_start():
     global spush
     global username, password, uid
@@ -351,24 +377,33 @@ except socket.timeout:
     print "Connection failed"
     sys.exit(1)
 
+
 testprogram = [
     start_serverpush(),
     do_login(),
     do_login_check(),
-    do_video_start(),
-    do_audio_start(),
-    delay(5),
-    do_audio_stop(),
+    do_speaker_on(),
+    delay(2),
+    do_speaker_off(),
     delay(2),
     do_logoff()
 ]
 
 """
-    ( spush.send_cmd4,  (username, password, uid)),
-    ( spush.send_cmd5,  (username, password)),
-    ( spush.send_cmd1,  (username, password)),
-    ( spush.send_cmd6,  (playme, 960)),                # send audio data to cam
+    do_video_start(),
+    do_audio_start(),
+    delay(5),
+    do_audio_stop(),
+    delay(2),
+    do_video_start(),
+    do_audio_start(),
+    delay(5),
+    do_audio_stop(),
 
+"""
+
+"""
+    ( spush.send_cmd6,  (playme, 960)),                # send audio data to cam
 """
 
 try:
@@ -376,7 +411,7 @@ try:
         func = cmd[0]
         par = cmd[1]
         func( *par )
-        time.sleep(0.5)
+        # time.sleep(0.5)
 finally:
     # Always shut the thread down
     spush.close()

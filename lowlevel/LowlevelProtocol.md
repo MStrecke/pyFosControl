@@ -93,6 +93,7 @@ nc: not checked
 | 64  | 100 | ptz info                            |
 | 6C  | 108 | show mirror/flip                    |
 | 6E  | 110 | show color adjust values            |
+| 6F  | 111 | Motion detection alert              |
 | 70  | 112 | show power freq: 50/60/outdoor mode |
 | 71  | 113 | stream select reply                 |
 
@@ -132,13 +133,13 @@ The following part only describes the data section.
 
 ## Packet 0 - Video on
 
-| type   | value | description            |
-| ------ | ----: | ---------------------- |
-| byte   |     0 | ?                      |
-| char64 |     X | username               |
-| char64 |     X | password               |
-| int32  |     X | UID                    |
-| res28  |     0 | ?                      |
+| type   | value | description                 |
+| ------ | ----: | --------------------------- |
+| byte   |     0 | videostream (0:main, 1:sub) |
+| char64 |     X | username                    |
+| char64 |     X | password                    |
+| int32  |     X | UID                         |
+| res28  |     0 | ?                           |
 
 ## Packet 1 - close connection
 
@@ -331,6 +332,14 @@ This packet is sent when the user changes the settings via the CGI commamnds.
 
 This packet is sent when the user changes these settings via the CGI commamnds.
 Range: 0 .. 100
+
+## Packet 111 - Motion detection alert
+
+| type   | value | description             |
+| ------ | ----: | ----------------------- |
+| res4   |     ? | 01 00 00 1e             |
+
+This packet only occurs if motion detection is enabled.
 
 ## Packet 112 - Show power frequency
 

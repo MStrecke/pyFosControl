@@ -291,6 +291,45 @@ class camhandler(tcphandler):
         print "Start serverpush"
         self.sendraw(data = """SERVERPUSH / HTTP/1.1\r\nHost: %s:%s\r\nAccept:*/*\r\nConnection: Close\r\n\r\n\r\n""" % (self.ip, self.port))
 
+# convenience functions for the test program
+# saves some typing
+
+def delay(secs):
+    return ( (time.sleep, (secs,) ) )
+
+def start_serverpush():
+    global spush
+    return ( spush.start_serverpush, () )
+
+def do_login():
+    global spush
+    global username, password, uid
+    return ( spush.send_cmd12, (username,password, uid))
+
+def do_login_check():
+    global spush
+    global uid
+    return ( spush.send_cmd15, (uid,))
+
+def do_logoff():
+    global username, password
+    return ( spush.send_cmd1, (username,password))
+
+def do_audio_start():
+    global spush
+    global username, password
+    return ( spush.send_cmd2, (username,password))
+
+def do_audio_stop():
+    global spush
+    global username, password
+    return ( spush.send_cmd3, (username,password))
+
+def do_video_start():
+    global spush
+    global username, password, uid
+    return ( spush.send_cmd0, (username,password,uid))
+
 # change according to your environment
 camera_ip = "192.168.0.102"
 camera_port = 88
@@ -313,35 +352,23 @@ except socket.timeout:
     sys.exit(1)
 
 testprogram = [
-    ( spush.start_serverpush, () ),                    # start connection
-    ( spush.send_cmd12, (username,password,uid)),      # Login
-    ( (time.sleep, (30,) ) )                            # delay
+    start_serverpush(),
+    do_login(),
+    do_login_check(),
+    do_video_start(),
+    do_audio_start(),
+    delay(5),
+    do_audio_stop(),
+    delay(2),
+    do_logoff()
 ]
 
 """
-    ( spush.start_serverpush, () ),                   # start connection
-    ( spush.send_cmd12, (username,password,uid)),     # video on
-    ( spush.send_cmd2, (username,password)),          # start audio
-    ( spush.send_cmd15, (uid,)),                      # Login check
-    ( time.sleep, (10,) ) ),                          # wait 10 secs
-    ( spush.send_cmd3, (username,password)),          # start audio
     ( spush.send_cmd4,  (username, password, uid)),
-    ( spush.send_cmd0,  (username, password, uid)),    # start video
-    ( spush.send_cmd0,  (username, password, uid)),    # start video
     ( spush.send_cmd5,  (username, password)),
-    ( (time.sleep, (5,) ) ),                           # delay
     ( spush.send_cmd1,  (username, password)),
-    ( (time.sleep, (5,) ) )
-    ( spush.send_cmd1,  (username, password)),         # close socket
-    ( spush.send_cmd15, (uid,)),                       # Login check
-    ( (time.sleep, (1,) ) ),                           # delay
-    ( spush.send_cmd4,  (username, password,uid)),
-    ( (time.sleep, (0.2,) ) ),                         # delay
     ( spush.send_cmd6,  (playme, 960)),                # send audio data to cam
-    ( (time.sleep, (0.21,) ) ),                        # delay
-    ( spush.send_cmd5,  (username, password)),
-    ( (time.sleep, (5,) ) ),                            # delay
-    ( spush.send_cmd1,  (username, password)),
+
 """
 
 try:

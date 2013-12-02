@@ -154,6 +154,27 @@ class foss_cmd_decode(object):
         printhex(data)
         return None
 
+def unpad(s):
+    """ unpad a string from trailing 0x00
+        make sure that all trailing zeros are actually zeros
+    :param s: source string
+    :returns: unpadded string, error message (or None, if ok)
+
+    """
+    res = ""
+    error = None
+    start = True
+    for c in s:
+        if start:
+            if ord(c) == 0:
+                start = False
+            else:
+                res += c
+        else:
+            if ord(c) != 0:
+                error = "padding chars not zero %2x" % ord(c)
+    return res, error
+
 class foss_cmd_0(foss_cmd_decode):
     """
     int32  command
@@ -184,28 +205,6 @@ class foss_cmd_0(foss_cmd_decode):
 
         print "User/Pass/uid: %s %s %08x" % (username, password, uid)
         return None
-
-def unpad(s):
-    """ unpad a string from trailing 0x00
-        make sure that all trailing zeros are actually zeros
-    :param s: source string
-    :returns: unpadded string, error message (or None, if ok)
-
-    """
-    res = ""
-    error = None
-    start = True
-    for c in s:
-        if start:
-            if ord(c) == 0:
-                start = False
-            else:
-                res += c
-        else:
-            if ord(c) != 0:
-                error = "padding chars not zero %2x" % ord(c)
-    return res, error
-
 
 class foss_cmd_2(foss_cmd_decode):
     """
@@ -336,6 +335,19 @@ class foss_cmd_15(foss_cmd_decode):
         cmd, magic, size, uid  = struct.unpack("<I4sII", data)
         print "uid %08x" % uid
         # printhex(data)
+        return None
+
+class foss_cmd_21(foss_cmd_decode):
+    """
+    int32 command
+    char4 FOSC
+    int32 size
+    res36 ???
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 21, "Speaker off reply")
+    def decode(self, data):
+        cmd, magic, size, rdata  = struct.unpack("<I4sI36s", data)
         return None
 
 class foss_cmd_27(foss_cmd_decode):
@@ -545,6 +557,7 @@ decoder_list = [
             foss_cmd_5(),
             foss_cmd_12(),
             foss_cmd_15(),
+            foss_cmd_21(),
             foss_cmd_27(),
             foss_cmd_29(),
             foss_cmd_108(),

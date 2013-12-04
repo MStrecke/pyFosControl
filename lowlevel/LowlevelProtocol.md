@@ -91,6 +91,7 @@ nc: not checked
 | 1b  |  27 | audio data in                       |
 | 1d  |  29 | Login check reply                   |
 | 64  | 100 | ptz info                            |
+| 6A  | 106 | preset point changed                |
 | 6C  | 108 | show mirror/flip                    |
 | 6E  | 110 | show color adjust values            |
 | 6F  | 111 | Motion detection alert              |
@@ -309,6 +310,17 @@ FYI: The *web interface* imposes the following restrictions:
  * max. name length of cruise: 20 chars
  * max. number of cruises: 8
  * max. number of preset points per cruise: 8
+
+## Packet 106 preset point changed
+
+After changing a preset point, I received this packet. See also packet 100.
+
+| type       | value | description              |
+| ---------- | ----: | ------------------------ |
+| byte       |     X | number of preset points  |
+| 16* char32 |     X | name of the preset point |
+| res32      |     0 | ? all zeros              |
+
 
 ## Packet 108 - Show mirror/flip
 

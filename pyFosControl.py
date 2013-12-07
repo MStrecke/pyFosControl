@@ -249,6 +249,7 @@ class resultObj(object):
     def extendedResult(self, name):
         """ override "result", if main result is 0, but subresult is not
         .. note:: make subresult value positive to distinguish it from main result
+        .. note:: override _result as well
         """
         if self.result != 0: return
         subresult = self.get(name)
@@ -257,6 +258,7 @@ class resultObj(object):
             self.set("result", abs(int(subresult)))
         except ValueError:
             self.set("result", subresult)
+        self.set("_result","sub error (%s) %s" % (name,subresult))
 
     def stringLookupConv(self, value, converter, name):
         self.set(name,converter.get(value))
@@ -516,6 +518,7 @@ class camBase(object):
 
     def getOsdSetting(self):
         return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
+
     def setOsdSetting(self,isEnableTimeStamp,isEnableDevName,dispPos):
         """
         .. note: The parameter isEnableOSDMask which is described in the API has no effect. See setOsdMask
@@ -1250,6 +1253,11 @@ class cam(camBase):
     def ptzSetCruiseMap(self,name, points):
         res = camBase.ptzSetCruiseMap(self,name,points)
         res.extendedResult("setResult")
+        return res
+
+    def ptzDelCruiseMap(self,name):
+        res = camBase.ptzDelCruiseMap(self,name)
+        res.extendedResult("delResult")
         return res
 
     def ptzStartCruise(self,mapName):

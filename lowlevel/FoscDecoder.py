@@ -419,7 +419,7 @@ class foss_cmd_100(foss_cmd_decode):
     byte   number of preset points
 16* char32 name of preset (max. 16), maxlen 20.
     res32  zeroes
-    byte   number of walks
+    byte   number of cruises
 8* char32 name of preset (max. 8)
     res32  zeroes
     """
@@ -427,7 +427,7 @@ class foss_cmd_100(foss_cmd_decode):
         foss_cmd_decode.__init__(self, 100, "presets, walks and more")
     def decode(self, data):
         printhex(data)
-        # incomplete decdoe
+        # incomplete decode
         cmd, magic, size, res1, \
         numPr, pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16, res2, \
         numW, wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8, res3, res4, cameraid = \
@@ -437,16 +437,68 @@ class foss_cmd_100(foss_cmd_decode):
 
         presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
         presets = [ toString(p) for p in presets]
-        walks = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
-        walks = [ toString(w) for w in walks]
+        cruises = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
+        cruises = [ toString(w) for w in cruises]
 
         printhex(res2)
 
         print "Number of preset points",numPr
         print "Names of presets:",presets
         print "Number of cruises:", numW
-        print "Name of cruises:",walks
+        print "Name of cruises:",cruises
         print "Camera ID:",cameraid
+
+
+class foss_cmd_106(foss_cmd_decode):
+    """
+    int32  command
+    char4  FOSC
+    int32  size
+    byte   number of preset points
+16* char32 name of preset (max. 16), maxlen 20.
+    res32  zeroes
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 106, "preset points changed")
+    def decode(self, data):
+        cmd, magic, size, \
+        numPr, pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16, res  = \
+        unpack("<I4sI"+
+               "B32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s32s", data)
+        presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
+        presets = [ toString(p) for p in presets]
+
+        res = toString(res)
+        testEmptyString(res,"reserved")
+
+        print "Number of preset points",numPr
+        print "Names of presets:",presets
+
+class foss_cmd_107(foss_cmd_decode):
+    """
+    int32  command
+    char4  FOSC
+    int32  size
+    byte   number of cruises
+8* char32 name of preset (max. 8)
+    res32  zeroes
+    """
+    def __init__(self):
+        foss_cmd_decode.__init__(self, 107, "cruises list changed")
+    def decode(self, data):
+        cmd, magic, size, \
+        numW, wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8, res = \
+        unpack("<I4sI"+
+                "B32s32s32s32s32s32s32s32s32s", data)
+
+        cruises = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
+        cruises = [ toString(w) for w in cruises]
+
+        res = toString(res)
+        testEmptyString(res,"reserved")
+
+        print "Number of cruises:", numW
+        print "Name of cruises:",cruises
 
 class foss_cmd_110(foss_cmd_decode):
     """
@@ -540,8 +592,10 @@ decoder_list = [
             foss_cmd_21(),
             foss_cmd_27(),
             foss_cmd_29(),
-            foss_cmd_108(),
             foss_cmd_100(),
+            foss_cmd_106(),
+            foss_cmd_107(),
+            foss_cmd_108(),
             foss_cmd_110(),
             foss_cmd_111(),
             foss_cmd_112(),

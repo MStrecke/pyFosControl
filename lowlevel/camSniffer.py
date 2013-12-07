@@ -305,7 +305,7 @@ class fosc_analyser(analyser):
         # FoscDecoder.printhex(ip.tcp.data, "cmd0", diff)
         # return
 
-        # if not cmd in [111]: return
+        if not cmd in [106,107]: return
         # if cmd in [12, 15, 29, 26]: return
 
         if not verbose:
@@ -347,7 +347,7 @@ if __name__=='__main__':
     pcap_device = "eth0"
 
     # file name to store captured file in live mode
-    recfile = "test4.pcap"
+    recfile = "test-106-107.pcap"
     # filename of capture file to analyse
     playfile = recfile
     # audio dump filename
@@ -362,6 +362,14 @@ if __name__=='__main__':
 
     verbose = not live
     # verbose = True
+
+    if live:
+        print "Entering live mode"
+        if not recfile is None:
+            print "dumping to:", recfile
+    else:
+        if not playfile is None:
+            print "reading from:", playfile
 
     # open a file for the content of packet 27
     if audiodumpfilename is None:

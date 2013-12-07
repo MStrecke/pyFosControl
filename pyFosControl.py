@@ -336,18 +336,20 @@ class camBase(object):
     - XML returned from the camera is converted into a resultObj
     - resultObj param "result" is converted to integer, if possible
     """
-    def __init__(self,prot,host,port,user,password):
+    def __init__(self,prot,host,port,user,password, uid=None):
         """
         :param prot: protocol used ("http" or "https")
         :param host: hostname (e.g. "www.example.com")
         :param port: port used (e.g. 88 or 443)
         :param user: username of account in camera
-        :param password: passwort of account in camera
+        :param password: password of account in camera
+        :param uid: if not None, this is value is appended to the request (not escaped)
         """
 
         self.base = "%s://%s:%s/cgi-bin/CGIProxy.fcgi" % (prot,host,port)
         self.user = user
         self.password = password
+        self.uid = uid
 
         self.debugfile = None
         self.consoleDump = False
@@ -450,6 +452,9 @@ class camBase(object):
                 pa[p] = param[p]
 
         ps = urllib.urlencode(pa)
+        if not self.uid is None:
+            if ps != "": ps += "&"
+            ps += str(self.uid)
 
         if self.consoleDump: print("%s?%s\n\n" % (self.base,ps))
         if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base,ps))
@@ -1223,6 +1228,16 @@ class cam(camBase):
             offset += 10
             res = camBase.getLog(self,offset=offset)
         res.set("_log",bigarray)
+        return res
+
+    def ptzAddPresetPoint(self,name):
+        res = camBase.ptzAddPresetPoint(self,name)
+        res.extendedResult("addResult")
+        return res
+
+    def ptzDeletePresetPoint(self,name):
+        res = camBase.ptzDeletePresetPoint(self,name)
+        res.extendedResult("deleteResult")
         return res
 
     def ptzGetCruiseMapList(self):

@@ -8,7 +8,8 @@ import time
 import sys
 import FoscDecoder
 
-
+sys.path.append("..")       # only for pyFosControl in parent directory
+import pyFosControl
 
 class readthread(Thread):
     """
@@ -356,6 +357,39 @@ def do_video_start():
     global username, password, uid
     return ( spush.send_cmd0, (username,password,uid))
 
+##############################
+# convenience functions to CGI
+
+def do_cgi_logIn(name,uid):
+    global cgictrl
+    def subfkt(pname, puid):
+        print(cgictrl.logIn(pname,groupId=puid))
+    return ( subfkt, (name,uid) )
+
+def do_cgi_logOut(name,uid):
+    global cgictrl
+    def subfkt(pname, puid):
+        print(cgictrl.logOut(pname,groupId=puid))
+    return ( subfkt, (name,uid) )
+
+def do_cgi_add_preset(name):
+    global cgictrl
+    def subfkt(pname):
+        print(cgictrl.ptzAddPresetPoint(pname))
+    return ( subfkt, (name,) )
+
+def do_cgi_del_preset(name):
+    global cgictrl
+    def subfkt(pname):
+        print(cgictrl.ptzDeletePresetPoint(pname))
+    return ( subfkt, (name,) )
+
+def do_cgi_del_cruise(name):
+    global cgictrl
+    def subfkt(pname):
+        print(cgictrl.ptzDelCruiseMap(pname))
+    return ( subfkt, (name,) )
+
 # change according to your environment
 camera_ip = "192.168.0.102"
 camera_port = 88
@@ -363,6 +397,9 @@ username = "testadmin"
 password = "testpassword"
 uid = int(time.time())       # unix time stamp as random unique identifier
 
+# handle to CGI interface
+cgictrl = pyFosControl.cam("http",camera_ip,camera_port,username,password)
+cgictrl.setConsoleDump(True)
 
 # Audio data to send to camera (cmd6), only partially successful yet
 # playme = open("music8000s.raw","rb").read()
@@ -378,35 +415,41 @@ except socket.timeout:
     sys.exit(1)
 
 
-testprogram = [
-    start_serverpush(),
-    do_login(),
-    do_login_check(),
-    do_speaker_on(),
-    delay(2),
-    do_speaker_off(),
-    delay(2),
-    do_logoff()
-]
-
-"""
-    do_video_start(),
-    do_audio_start(),
-    delay(5),
-    do_audio_stop(),
-    delay(2),
-    do_video_start(),
-    do_audio_start(),
-    delay(5),
-    do_audio_stop(),
-
-"""
-
-"""
-    ( spush.send_cmd6,  (playme, 960)),                # send audio data to cam
-"""
-
 try:
+    testprogram = [
+        do_cgi_logIn(username,uid),
+        start_serverpush(),
+        do_login(),
+        do_login_check(),
+        delay(1),
+        # do_cgi_del_preset("punk8"),
+        do_cgi_del_cruise("crusie5"),
+        delay(1),
+        do_cgi_logOut(username,uid),
+        delay(1),
+        do_logoff()
+    ]
+
+    """
+        do_video_start(),
+        do_audio_start(),
+        delay(5),
+        do_audio_stop(),
+        delay(2),
+        do_video_start(),
+        do_audio_start(),
+        delay(5),
+        do_audio_stop(),
+        do_speaker_on(),
+        delay(2),
+        do_speaker_off(),
+        delay(2),
+    """
+
+    """
+        ( spush.send_cmd6,  (playme, 960)),                # send audio data to cam
+    """
+
     for cmd in testprogram:
         func = cmd[0]
         par = cmd[1]
@@ -417,6 +460,6 @@ finally:
     spush.close()
 
 # Display the UID used
-print "\n** uid: %08x" % uid
+print "\n** uid: 0x%08x (%s)" % (uid, uid)
 FoscDecoder.closeAudioDumpFile()
 FoscDecoder.datacomp.stats()

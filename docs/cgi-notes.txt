@@ -12,6 +12,15 @@ snapPicture2
 getPTZspeed/setPTZspeed
 - contrary to doc: 0: very fast, 4: very slow
 
+ptzAddPresetPoint
+- additional result field:
+  - addResult     2: point already exists
+
+ptzDeletePresetPoint
+- additional result field:
+  - deleteResult  1: point does not exist
+                  4: point not deleted (used in cruise)
+
 setOSDSetting
 - parameter `isEnableOSDMask` not working
 

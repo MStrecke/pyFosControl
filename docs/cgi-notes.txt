@@ -21,6 +21,10 @@ ptzDeletePresetPoint
   - deleteResult  1: point does not exist
                   4: point not deleted (used in cruise)
 
+ptzDeletePresetPoint
+- additional result field:
+  - delResult  1: cruise does not exist
+
 setOSDSetting
 - parameter `isEnableOSDMask` not working
 

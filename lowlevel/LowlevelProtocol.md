@@ -305,6 +305,9 @@ The camera sends this packet after receiving command 0.  It contains the preset 
 | char12     |     X | camera id                |
 | ...        |     ? | ?                        |
 
+The names are null-terminated strings. If a name is deleted, only the first byte is set to zero, i.e. the remaining
+name is still visible in a hexdump.
+
 FYI: The *web interface* imposes the following restrictions:
  * max. name length of preset point: 20 chars
  * max. number of preset points: 16
@@ -316,6 +319,7 @@ FYI: The *web interface* imposes the following restrictions:
 
 After trying to delete a preset point that is still part of a cruise,
 I received this packet. See also packet 100.
+I only saw it when using the browser plugin.
 
 | type       | value | description              |
 | ---------- | ----: | ------------------------ |
@@ -326,6 +330,7 @@ I received this packet. See also packet 100.
 ## Packet 107 cruises list changed
 
 After deleting a cruise, I received this packet. See also packet 100, 106.
+I only saw it when using the browser plugin.
 
 | type       | value | description              |
 | ---------- | ----: | ------------------------ |

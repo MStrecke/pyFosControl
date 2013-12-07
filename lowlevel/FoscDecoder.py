@@ -134,11 +134,12 @@ def toBool(s):
     if s == 1: return True
     raise ValueError,"invalid value for boolean: %s" % s
 
-def toString(s, hint = ""):
+def toString(s, hint = "", ignorepadding = False):
     """ function to extract a string from a buffer padded with zeroes
     :param s: input bytes
+    :param ignorepadding: don't check padding
     :returns: cleaned string
-    .. note:: throws ValueError, if padding is not zero
+    .. note:: throws ValueError, if padding is not zero (and not ignored)
     """
     res = ""
 
@@ -146,7 +147,9 @@ def toString(s, hint = ""):
     for c in s:
         if mode == 0:
             if ord(c) == 0:
-                mode == 1
+                if ignorepadding:
+                    break
+                mode = 1
             else:
                 res += c
         elif mode == 1:
@@ -436,9 +439,9 @@ class foss_cmd_100(foss_cmd_decode):
                 "B32s32s32s32s32s32s32s32s32s92s12s", data)
 
         presets = [pr1, pr2, pr3, pr4, pr5, pr6, pr7, pr8, pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16]
-        presets = [ toString(p) for p in presets]
+        presets = [ toString(p,ignorepadding=True) for p in presets]
         cruises = [wa1, wa2, wa3, wa4, wa5, wa6, wa7, wa8]
-        cruises = [ toString(w) for w in cruises]
+        cruises = [ toString(w,ignorepadding=True) for w in cruises]
 
         printhex(res2)
 

@@ -258,7 +258,8 @@ class resultObj(object):
             self.set("result", abs(int(subresult)))
         except ValueError:
             self.set("result", subresult)
-        self.set("_result","sub error (%s) %s" % (name,subresult))
+        if subresult != "0":
+            self.set("_result","sub error (%s) %s" % (name,subresult))
 
     def stringLookupConv(self, value, converter, name):
         self.set(name,converter.get(value))

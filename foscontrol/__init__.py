@@ -209,7 +209,7 @@ def emptyStringNone(s):
     return s
 
 
-class resultObj(object):
+class ResultObj(object):
     """
     create a resultObject from the XML data returned by the camera.
     XML fields will be accessible as object attributes
@@ -343,7 +343,7 @@ class resultObj(object):
             pass
 
 
-class camBase(object):
+class CamBase(object):
     """
     basic interface to camera
 
@@ -485,7 +485,7 @@ class camBase(object):
             return retdata
 
         res = self.decodeResult(retdata, doBool=doBool)
-        reso = resultObj(res)
+        reso = ResultObj(res)
         return reso
 
     # image settings
@@ -1084,7 +1084,7 @@ class camBase(object):
         return self.sendcommand("setSystemTime", param=param, doBool=["isDst"])
 
 
-class cam(camBase):
+class Cam(CamBase):
     """ extended interface
 
     Some more conversions:
@@ -1119,7 +1119,7 @@ class cam(camBase):
         .. note:: This higher function uses the :func:`snapPicture` API call, as :func:`snapPicture2` is currently
                   limited to 512,000 bytes (bug in firmware)
         """
-        w = camBase.snapPicture(self)
+        w = CamBase.snapPicture(self)
         # <html><body><img src="../snapPic/Snap_20131027-114838.jpg"/></body></html>
         res = re.search("img src=\"(.+)\"", w)
         if res is None: return (None, None)
@@ -1137,7 +1137,7 @@ class cam(camBase):
         return (data, fname)
 
     def getPTZSpeed(self):
-        res = camBase.getPTZSpeed(self)
+        res = CamBase.getPTZSpeed(self)
         res.stringLookupConv(res.speed, DC_ptzSpeedList, "_speed")
         return res
 
@@ -1147,7 +1147,7 @@ class cam(camBase):
         :return: unsorted python string list
         """
         res = []
-        w = camBase.getPTZPresetPointList(self)
+        w = CamBase.getPTZPresetPointList(self)
 
         try:
             poicnt = int(w.cnt)
@@ -1193,7 +1193,7 @@ class cam(camBase):
                 "encryption": DC_WifiEncryption.get(ma.group(5), "enctype %s" % ma.group(5))
             }
 
-        res = camBase.getWifiList(self)
+        res = CamBase.getWifiList(self)
         total = int(res.totalCnt)
         offset = 0
         bigarray = []
@@ -1203,13 +1203,13 @@ class cam(camBase):
             offset += 10
             res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
             res.stringLookupConv(res.authType, DC_WifiAuth, "_authType")
-            res = camBase.getWifiList(self, startNo=offset)
+            res = CamBase.getWifiList(self, startNo=offset)
         res.set("_ap", bigarray)
 
         return res
 
     def getWifiConfig(self):
-        res = camBase.getWifiConfig(self)
+        res = CamBase.getWifiConfig(self)
         res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
         res.stringLookupConv(res.authMode, DC_WifiAuth, "_authMode")
         return res
@@ -1229,7 +1229,7 @@ class cam(camBase):
         _linkage: array of alarm action
         """
 
-        res = camBase.getMotionDetectConfig(self)
+        res = CamBase.getMotionDetectConfig(self)
         res.stringLookupConv(res.sensitivity, DC_motionDetectSensitivity, "_sensitivity")
 
         res.collectBinaryArray("schedule", "_schedules", 48)
@@ -1239,7 +1239,7 @@ class cam(camBase):
         return res
 
     def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
-        camBase.setMotionDetectConfig(self,
+        CamBase.setMotionDetectConfig(self,
                                       isEnable,
                                       BD_alarmAction.toInt(linkage),
                                       snapInterval,
@@ -1248,7 +1248,7 @@ class cam(camBase):
                                       binaryarray2int(areas))
 
     def getSnapConfig(self):
-        res = camBase.getSnapConfig(self)
+        res = CamBase.getSnapConfig(self)
         res.stringLookupSet(res.snapPicQuality,
                             {"0": "low", "1": "normal", "2": "high"},
                             "_snapPicQuality")
@@ -1258,13 +1258,13 @@ class cam(camBase):
         return res
 
     def getIOAlarmConfig(self):
-        res = camBase.getIOAlarmConfig(self)
+        res = CamBase.getIOAlarmConfig(self)
         res.collectBinaryArray("schedule", "_schedules", 48)
         res.DB_convert2array("linkage", "_linkage", BD_alarmAction)
         return res
 
     def setIOAlarmConfig(self, isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules):
-        res = camBase.setIOAlarmConfig(self,
+        res = CamBase.setIOAlarmConfig(self,
                                        isEnable,
                                        BD_alarmAction.toInt(linkage),
                                        alarmLevel,
@@ -1274,12 +1274,12 @@ class cam(camBase):
         return res
 
     def getFirewallConfig(self):
-        res = camBase.getFirewallConfig(self)
+        res = CamBase.getFirewallConfig(self)
         res.collectArray("ipList", "_ipList", convertFunc=lambda x: long2ip(int(x)))
         return res
 
     def setFirewallConfig(self, isEnable, rule, ipList):
-        return camBase.setFirewallConfig(self, isEnable, rule, arrayTransform(ipList, convertFunc=lambda x: ip2long(x)))
+        return CamBase.setFirewallConfig(self, isEnable, rule, arrayTransform(ipList, convertFunc=lambda x: ip2long(x)))
 
     def getLog(self):
         def conv(s):
@@ -1306,7 +1306,7 @@ class cam(camBase):
                 DC_logtype.get(ma.group(4), "type %s" % ma.group(4))
             )
 
-        res = camBase.getLog(self)
+        res = CamBase.getLog(self)
         total = int(res.totalCnt)
         curcnt = int(res.curCnt)
         offset = 0
@@ -1315,85 +1315,85 @@ class cam(camBase):
             res.collectArray("log", "_log", convertFunc=conv)
             bigarray += res._log
             offset += 10
-            res = camBase.getLog(self, offset=offset)
+            res = CamBase.getLog(self, offset=offset)
         res.set("_log", bigarray)
         return res
 
     def ptzAddPresetPoint(self, name):
-        res = camBase.ptzAddPresetPoint(self, name)
+        res = CamBase.ptzAddPresetPoint(self, name)
         res.extendedResult("addResult")
         return res
 
     def ptzDeletePresetPoint(self, name):
-        res = camBase.ptzDeletePresetPoint(self, name)
+        res = CamBase.ptzDeletePresetPoint(self, name)
         res.extendedResult("deleteResult")
         return res
 
     def ptzGetCruiseMapList(self):
-        res = camBase.ptzGetCruiseMapList(self)
+        res = CamBase.ptzGetCruiseMapList(self)
         res.collectArray("map", "_maps", convertFunc=emptyStringNone)
         res.extendedResult("getResult")
         return res
 
     def ptzGetCruiseMapInfo(self, name):
-        res = camBase.ptzGetCruiseMapInfo(self, name)
+        res = CamBase.ptzGetCruiseMapInfo(self, name)
         res.collectArray("point", "_points", convertFunc=emptyStringNone)
         res.extendedResult("getResult")
         return res
 
     def ptzSetCruiseMap(self, name, points):
-        res = camBase.ptzSetCruiseMap(self, name, points)
+        res = CamBase.ptzSetCruiseMap(self, name, points)
         res.extendedResult("setResult")
         return res
 
     def ptzDelCruiseMap(self, name):
-        res = camBase.ptzDelCruiseMap(self, name)
+        res = CamBase.ptzDelCruiseMap(self, name)
         res.extendedResult("delResult")
         return res
 
     def ptzStartCruise(self, mapName):
-        res = camBase.ptzStartCruise(self, mapName)
+        res = CamBase.ptzStartCruise(self, mapName)
         res.extendedResult("startResult")
         return res
 
     def getDDNSConfig(self):
-        res = camBase.getDDNSConfig(self)
+        res = CamBase.getDDNSConfig(self)
         res.stringLookupConv(res.ddnsServer, DC_ddnsServer, "_ddnsServer")
         return res
 
     def setDDNSConfig(self, isEnable, hostName, ddnsServer, user, password):
-        return camBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
+        return CamBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
 
     def getFTPConfig(self):
-        res = camBase.getFTPConfig(self)
+        res = CamBase.getFTPConfig(self)
         res.stringLookupConv(res.mode, DC_FtpMode, "_mode")
         return res
 
     def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password):
-        return camBase.setFTPConfig(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
+        return CamBase.setFTPConfig(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
 
     def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password):
-        res = camBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
+        res = CamBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
         res.extendedResult("testResult")
         return res
 
     def getSMTPConfig(self):
-        res = camBase.getSMTPConfig(self)
+        res = CamBase.getSMTPConfig(self)
         res.stringLookupConv(res.tls, DC_SmtpTlsMode, "_tls")
         return res
 
     def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver):
         if type(receiver) == list:
             receiver = ";".join(receiver)
-        return camBase.setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver)
+        return CamBase.setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver)
 
     def SMTPTest(self, server, port, isNeedAuth, tls, user, password):
-        res = camBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password)
+        res = CamBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password)
         res.extendedResult("testResult")
         return res
 
     def getSystemTime(self):
-        res = camBase.getSystemTime(self)
+        res = CamBase.getSystemTime(self)
         res.stringLookupConv(res.timeSource, DC_timeSource, "_timeSource")
         res.stringLookupConv(res.dateFormat, DC_timeDateFormat, "_dateFormat")
         res.stringLookupConv(res.timeFormat, DC_timeFormat, "_timeFormat")
@@ -1401,7 +1401,7 @@ class cam(camBase):
 
     def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour,
                       min, sec):
-        return camBase.setSystemTime(self,
+        return CamBase.setSystemTime(self,
                                      DC_timeSource.lookup(timeSource),
                                      ntpServer,
                                      DC_timeDateFormat.lookup(dateFormat),
@@ -1421,7 +1421,7 @@ if __name__ == "__main__":
     passwd = config.get('general', 'password')
 
     # connection to the camera
-    do = cam(prot, host, port, user, passwd)
+    do = Cam(prot, host, port, user, passwd)
 
     # display basic camera info
     res = do.getDevInfo()

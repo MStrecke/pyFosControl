@@ -374,7 +374,7 @@ class CamBase(object):
         p = {"cmd": "GetMJStream", "usr": self.user, "pwd": self.password}
         ps = urllib.urlencode(p)
         self.MJStreamURL = "%s://%s:%s/cgi-bin/CGIStream.cgi?%s" % (prot, host, port, ps)
-
+        self.RTSPStreamURL = "rtsp://%s:%s@%s:%s/videoMain" % (user, password, host, port)
 
     def openDebug(self, filename):
         """ dump communication with camera into file
@@ -559,6 +559,9 @@ class CamBase(object):
         .. note: URL will return error 500 if substream has not been switched to MJPEG
         """
         return self.MJStreamURL
+
+    def getRTSPStream(self):
+        return self.RTSPStreamURL
 
     def getOsdSetting(self):
         return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp", "isEnableDevName", "isEnableOSDMask"])
@@ -880,7 +883,6 @@ class CamBase(object):
 
     def ptzStopCruise(self):
         return self.sendcommand("ptzStopCruise")
-
 
     def getDevState(self):
         return self.sendcommand("getDevState")

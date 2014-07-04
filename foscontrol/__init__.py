@@ -9,6 +9,7 @@ import ConfigParser
 import struct, socket
 import datetime
 
+
 def encode_multipart(fields, files, boundary=None):
     """
     Encodes a file in order to send it as an answer to a form
@@ -44,7 +45,7 @@ def encode_multipart(fields, files, boundary=None):
         lines.extend((
             '--{0}'.format(boundary),
             'Content-Disposition: form-data; name="{0}"; filename="{1}"'.format(
-                    escape_quote(name), escape_quote(filename)),
+                escape_quote(name), escape_quote(filename)),
             'Content-Type: {0}'.format(mimetype),
             '',
             value['content'],
@@ -63,6 +64,7 @@ def encode_multipart(fields, files, boundary=None):
 
     return (body, headers)
 
+
 class DictBits(object):
     """ Helper class for bit mappings
 
@@ -78,7 +80,8 @@ class DictBits(object):
     ...
     ValueError: option abcde not found
     """
-    def __init__(self,dict):
+
+    def __init__(self, dict):
         """
         :param dict: dictionary {bitpos1: "label1", bitpos2: "label2", ... }
         """
@@ -86,7 +89,7 @@ class DictBits(object):
         self.values = dict.values()
         self.items = dict.items()
 
-    def toInt(self,value):
+    def toInt(self, value):
         """ generate bitmask from labels
 
         :param value: array with labels to convert
@@ -95,12 +98,12 @@ class DictBits(object):
         """
         res = 0
         for v in value:
-            if not v in self.values: raise ValueError,"option %s not found" % v
-            k = [key for key,value in self.items if value==v ][0]
+            if not v in self.values: raise ValueError, "option %s not found" % v
+            k = [key for key, value in self.items if value == v][0]
             res |= (1 << k)
         return res
 
-    def toArray(self,value):
+    def toArray(self, value):
         """ create array of labels from bitmask
 
         :param value: integer with bitmask
@@ -117,17 +120,18 @@ class DictBits(object):
         return res
 
 # same for: motion detection, IO alarm
-BD_alarmAction = DictBits( {0:"ring", 1:"mail", 2:"picture", 3:"video"} )
+BD_alarmAction = DictBits({0: "ring", 1: "mail", 2: "picture", 3: "video"})
+
 
 class DictChar(object):
-    def __init__(self,dict):
+    def __init__(self, dict):
         self.dict = dict
         self.keys = dict.keys()
         self.values = dict.values()
         self.items = dict.items()
 
-    def get(self, char, default = None):
-        return self.dict.get(char,default)
+    def get(self, char, default=None):
+        return self.dict.get(char, default)
 
     def lookup(self, v):
         """ lookup value in keys and items of the dict and return the key
@@ -137,23 +141,25 @@ class DictChar(object):
         . note:: this way the URL parameter could be set by either cleartext or the key
         """
         if v in self.keys: return v
-        if not v in self.values: raise ValueError,"option %s not found" % v
-        k = [key for key,value in self.items if value==v ][0]
+        if not v in self.values: raise ValueError, "option %s not found" % v
+        k = [key for key, value in self.items if value == v][0]
         return k
 
-DC_WifiEncryption = DictChar( {"0": "Open Mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2"} )
-DC_WifiAuth = DictChar( {"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
-DC_motionDetectSensitivity = DictChar( {"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"} )
-DC_ddnsServer = DictChar( {"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
-DC_ptzSpeedList = DictChar( {"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'} )
-DC_logtype = DictChar( {"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"} )
-DC_FtpMode = DictChar( {"0": "PASV", "1": "PORT" })
-DC_SmtpTlsMode = DictChar( {"0": "None", "1": "TLS", "2": "STARTTLS" })
-DC_timeSource = DictChar( {"0": "NTP server", "1": "manually"})
-DC_timeDateFormat = DictChar( {"0": "YYYY-MM-DD", "1": "DD/MM/YYYY", "2": "MM/DD/YYYY"} )
-DC_timeFormat = DictChar( {"0": "12 hours", "1": "24 hours" } )
 
-def array2dict(source, keyprefix, convertFunc = None):
+DC_WifiEncryption = DictChar({"0": "Open Mode", "1": "WEP", "2": "WPA", "3": "WPA2", "4": "WPA/WPA2"})
+DC_WifiAuth = DictChar({"0": "Open Mode", "1": "Shared key", "2": "Auto mode"})
+DC_motionDetectSensitivity = DictChar({"0": "low", "1": "normal", "2": "high", "3": "lower", "4": "lowest"})
+DC_ddnsServer = DictChar({"0": "Factory DDNS", "1": "Oray", "2": "3322", "3": "no-ip", "4": "dyndns"})
+DC_ptzSpeedList = DictChar({"4": 'very slow', "3": 'slow', "2": 'normal speed', "1": 'fast', "0": 'very fast'})
+DC_logtype = DictChar({"0": "System startup", "3": "Login", "4": "Logout", "5": "User offline"})
+DC_FtpMode = DictChar({"0": "PASV", "1": "PORT"})
+DC_SmtpTlsMode = DictChar({"0": "None", "1": "TLS", "2": "STARTTLS"})
+DC_timeSource = DictChar({"0": "NTP server", "1": "manually"})
+DC_timeDateFormat = DictChar({"0": "YYYY-MM-DD", "1": "DD/MM/YYYY", "2": "MM/DD/YYYY"})
+DC_timeFormat = DictChar({"0": "12 hours", "1": "24 hours"})
+
+
+def array2dict(source, keyprefix, convertFunc=None):
     """ convert an array to dict
     :param keyprefix: key prefix used in the dict
     :param convertFunc: function to be called to convert value prior to storing it
@@ -168,11 +174,13 @@ def array2dict(source, keyprefix, convertFunc = None):
         count += 1
     return res
 
+
 def arrayTransform(source, convertFunc):
     res = []
     for x in source:
         res.append(convertFunc(x))
     return res
+
 
 def binaryarray2int(source):
     """ helper to convert array with binary strings (e.g. schedules) to integer
@@ -180,28 +188,33 @@ def binaryarray2int(source):
     :param source: the array with binary strings to convert
     :returns array with integers
     """
-    return arrayTransform(source, lambda x: int(x,2))
+    return arrayTransform(source, lambda x: int(x, 2))
+
 
 def ip2long(ip):
     """ Convert an IP string to long
     """
     return struct.unpack("<L", socket.inet_aton(ip))[0]
 
+
 def long2ip(w):
     """ Convert long in to ip string
     """
     return socket.inet_ntoa(struct.pack('<L', w))
+
 
 def emptyStringNone(s):
     if s is None: return None
     if s == "": return None
     return s
 
-class resultObj(object):
+
+class ResultObj(object):
     """
     create a resultObject from the XML data returned by the camera.
     XML fields will be accessible as object attributes
     """
+
     def __init__(self, data):
         self.data = data
 
@@ -216,11 +229,11 @@ class resultObj(object):
             -7: "Unknown error",
             -8: "Reserve",
             None: "Missing result parameter",
-            }.get( self.result)
+        }.get(self.result)
         if not s is None:
-            self.set("_result",s)
+            self.set("_result", s)
 
-    def __getattr__(self,name):
+    def __getattr__(self, name):
         """
         make XML fields accessible as attributes
         Special treatment for "result" field: return as integer, if possible
@@ -238,10 +251,10 @@ class resultObj(object):
             w += "%s: %s\n" % (x, self.data[x])
         return w
 
-    def get(self,name):
+    def get(self, name):
         return self.__getattr__(name)
 
-    def set(self,name,value):
+    def set(self, name, value):
         """ create (or override) attribute name with value
         """
         self.data[name] = value
@@ -259,20 +272,20 @@ class resultObj(object):
         except ValueError:
             self.set("result", subresult)
         if subresult != "0":
-            self.set("_result","sub error (%s) %s" % (name,subresult))
+            self.set("_result", "sub error (%s) %s" % (name, subresult))
 
     def stringLookupConv(self, value, converter, name):
-        self.set(name,converter.get(value))
+        self.set(name, converter.get(value))
 
-    def stringLookupSet(self,value, dict, name):
+    def stringLookupSet(self, value, dict, name):
         """ lookup a string in dict and set named attribute accordingly
         :param value: value to look-up
         :param dict: dictionary to look the value up
         :param name: name of the attribute to be set, if lookup was successful
         """
-        if value in dict: self.set(name,dict[value])
+        if value in dict: self.set(name, dict[value])
 
-    def collectArray(self,getparname, setparname, convertFunc = None):
+    def collectArray(self, getparname, setparname, convertFunc=None):
         """ scan resultObj for similar attributes and put them into an array
 
          :param getparname: parameter prefix to scan in resultObj
@@ -283,7 +296,7 @@ class resultObj(object):
         res = []
         cnt = 0
         while True:
-            p = self.get("%s%s" % (getparname,cnt))
+            p = self.get("%s%s" % (getparname, cnt))
             if p is None: break
             cnt += 1
             if convertFunc is None:
@@ -293,9 +306,9 @@ class resultObj(object):
                 if not cp is None:
                     res.append(cp)
         if res != []:
-            self.set(setparname,res)
+            self.set(setparname, res)
 
-    def collectBinaryArray(self,getparname, setparname, length):
+    def collectBinaryArray(self, getparname, setparname, length):
         """ scan resultObj for similar attributes and put them into a binaray string array
 
          :param getparname: parameter prefix to scan in resultObj
@@ -305,18 +318,18 @@ class resultObj(object):
         res = []
         cnt = 0
         while True:
-            p = self.get("%s%s" % (getparname,cnt))
+            p = self.get("%s%s" % (getparname, cnt))
             if p is None: break
             cnt += 1
             si = int(p)
             # add leading zeros
-            w = ("0"*length)+bin(si)[2:]
-            w = w[len(w)-length:]
+            w = ("0" * length) + bin(si)[2:]
+            w = w[len(w) - length:]
             res.append(w)
         if w != []:
-            self.set(setparname,res)
+            self.set(setparname, res)
 
-    def DB_convert2array(self,getparam, setparam, converter):
+    def DB_convert2array(self, getparam, setparam, converter):
         """ helper function: get param, convert to bit mask labels and store
         :param getparam: name of the source parameter in the resultObj
         :param setparam: name of the parameter to store the result in
@@ -329,7 +342,8 @@ class resultObj(object):
         except (ValueError, TypeError, KeyError):
             pass
 
-class camBase(object):
+
+class CamBase(object):
     """
     basic interface to camera
 
@@ -339,7 +353,8 @@ class camBase(object):
     - XML returned from the camera is converted into a resultObj
     - resultObj param "result" is converted to integer, if possible
     """
-    def __init__(self,prot,host,port,user,password ):
+
+    def __init__(self, prot, host, port, user, password):
         """
         :param prot: protocol used ("http" or "https")
         :param host: hostname (e.g. "www.example.com")
@@ -348,7 +363,7 @@ class camBase(object):
         :param password: password of account in camera
         """
 
-        self.base = "%s://%s:%s/cgi-bin/CGIProxy.fcgi" % (prot,host,port)
+        self.base = "%s://%s:%s/cgi-bin/CGIProxy.fcgi" % (prot, host, port)
         self.user = user
         self.password = password
 
@@ -356,16 +371,16 @@ class camBase(object):
         self.consoleDump = False
 
         # GetMJStream has is special URL
-        p = {"cmd": "GetMJStream", "usr": self.user, "pwd": self.password }
+        p = {"cmd": "GetMJStream", "usr": self.user, "pwd": self.password}
         ps = urllib.urlencode(p)
-        self.MJStreamURL = "%s://%s:%s/cgi-bin/CGIStream.cgi?%s" % (prot,host,port,ps)
+        self.MJStreamURL = "%s://%s:%s/cgi-bin/CGIStream.cgi?%s" % (prot, host, port, ps)
+        self.RTSPStreamURL = "rtsp://%s:%s@%s:%s/videoMain" % (user, password, host, port)
 
-
-    def openDebug(self,filename):
+    def openDebug(self, filename):
         """ dump communication with camera into file
         :param filename: filename to dump into
         """
-        self.debugfile = open(filename,"w")
+        self.debugfile = open(filename, "w")
 
     def closeDebug(self):
         """ close debug file
@@ -373,13 +388,13 @@ class camBase(object):
         if not self.debugfile is None: self.debugfile.close()
         self.debugfile = None
 
-    def setConsoleDump(self,onOff):
+    def setConsoleDump(self, onOff):
         """ switch debug dump to console on/off
         :param onOff: switch
         """
         self.consoleDump = onOff
 
-    def decodeResult(self,xmldata, doBool = None):
+    def decodeResult(self, xmldata, doBool=None):
         """decode XML resulted by API call
         :param xmldata: the xml string
         :param doBool: list of names, if parameter exists, try to convert them to a boolean value
@@ -401,7 +416,7 @@ class camBase(object):
 
         dom = xml.dom.minidom.parseString(xmldata)
         xmldata = dom.getElementsByTagName("CGI_Result")
-        assert len(xmldata) == 1,"only one CGI_Result tag allowed"
+        assert len(xmldata) == 1, "only one CGI_Result tag allowed"
         root = xmldata[0]
         for ele in root.childNodes:
             if ele.nodeType == ele.ELEMENT_NODE:
@@ -420,7 +435,7 @@ class camBase(object):
 
         return res
 
-    def sendcommand(self,cmd, param = None, raw = False, doBool = None, headers = None, data = None):
+    def sendcommand(self, cmd, param=None, raw=False, doBool=None, headers=None, data=None):
         """ send command to camera and return result
 
         :param cmd: command without parameters
@@ -444,8 +459,7 @@ class camBase(object):
                     if param[p] is True: param[p] = "1"
                     if param[p] is False: param[p] = "0"
 
-
-        pa = {"cmd": cmd, "usr": self.user, "pwd": self.password }
+        pa = {"cmd": cmd, "usr": self.user, "pwd": self.password}
 
         # add params not set to None
         for p in param:
@@ -454,14 +468,14 @@ class camBase(object):
 
         ps = urllib.urlencode(pa)
 
-        if self.consoleDump: print("%s?%s\n\n" % (self.base,ps))
-        if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base,ps))
+        if self.consoleDump: print("%s?%s\n\n" % (self.base, ps))
+        if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base, ps))
         url = self.base + "?" + ps
 
         if headers is None:
-            retdata = urllib.urlopen(url,data = data).read()
+            retdata = urllib.urlopen(url, data=data).read()
         else:
-            request = urllib2.Request(url, data = data, headers = headers)
+            request = urllib2.Request(url, data=data, headers=headers)
             retdata = urllib2.urlopen(request).read()
 
         if self.consoleDump: print("%s\n\n" % retdata)
@@ -470,42 +484,71 @@ class camBase(object):
         if raw:
             return retdata
 
-        res = self.decodeResult(retdata, doBool = doBool)
-        reso = resultObj(res)
+        res = self.decodeResult(retdata, doBool=doBool)
+        reso = ResultObj(res)
         return reso
 
     # image settings
-    def getImageSetting(self):   return self.sendcommand("getImageSetting")
-    def setBrightness(self, brightness):   return self.sendcommand("setBrightness", {'brightness': brightness} )
-    def setContrast(self, contrast):   return self.sendcommand("setContrast", {'contrast': contrast} )
-    def setHue(self, hue):   return self.sendcommand("setHue", {'hue': hue} )
-    def setSaturation(self, saturation):   return self.sendcommand("setSaturation", {'saturation': saturation} )
-    def setSharpness(self, sharpness):   return self.sendcommand("setSharpness", {'sharpness': sharpness} )
-    def resetImageSetting(self):   return self.sendcommand("resetImageSetting")
-    def getMirrorAndFlipSetting(self):   return self.sendcommand("getMirrorAndFlipSetting", doBool=['isMirror','isFlip'])
-    def mirrorVideo(self, isMirror):   return self.sendcommand("mirrorVideo", {'isMirror': isMirror}, doBool=["isMirror"] )
-    def flipVideo(self, isFlip):   return self.sendcommand("flipVideo", {'isFlip': isFlip}, doBool=["isFlip"] )
+    def getImageSetting(self):
+        return self.sendcommand("getImageSetting")
+
+    def setBrightness(self, brightness):
+        return self.sendcommand("setBrightness", {'brightness': brightness})
+
+    def setContrast(self, contrast):
+        return self.sendcommand("setContrast", {'contrast': contrast})
+
+    def setHue(self, hue):
+        return self.sendcommand("setHue", {'hue': hue})
+
+    def setSaturation(self, saturation):
+        return self.sendcommand("setSaturation", {'saturation': saturation})
+
+    def setSharpness(self, sharpness):
+        return self.sendcommand("setSharpness", {'sharpness': sharpness})
+
+    def resetImageSetting(self):
+        return self.sendcommand("resetImageSetting")
+
+    def getMirrorAndFlipSetting(self):
+        return self.sendcommand("getMirrorAndFlipSetting", doBool=['isMirror', 'isFlip'])
+
+    def mirrorVideo(self, isMirror):
+        return self.sendcommand("mirrorVideo", {'isMirror': isMirror}, doBool=["isMirror"])
+
+    def flipVideo(self, isFlip):
+        return self.sendcommand("flipVideo", {'isFlip': isFlip}, doBool=["isFlip"])
+
     def setPwrFreq(self, is50hz):
         """ set power frequency of sensor
         ;param is50hz: True: 50 Hz, False: 60 Hz
         """
-        return self.sendcommand("setPwrFreq", {'freq': is50hz}, doBool=["freq"] )
+        return self.sendcommand("setPwrFreq", {'freq': is50hz}, doBool=["freq"])
 
     def getVideoStreamParam(self):
         """
         isVBR not yet implemented by firmware
         """
         return self.sendcommand("getVideoStreamParam", doBool=['isVBR'])
+
     def setVideoStreamParam(self, streamType, bitRate, frameRate, GOP, isVBR):
         """
         isVBR not yet implemented by firmware
         """
-        return self.sendcommand("setVideoStreamParam", {'streamType':streamType, 'bitRate': bitRate,' frameRate': frameRate, 'GOP': GOP, 'isVBR':isVBR})
-    def getMainVideoStreamType(self):   return self.sendcommand("getMainVideoStreamType")
-    def getSubVideoStreamType(self):   return self.sendcommand("getSubVideoStreamType", doBool=["isVBR0","isVBR1","isVBR2","isVBR3"])
-    def setMainVideoStreamType(self,streamType):   return self.sendcommand("setMainVideoStreamType", {'streamType': streamType})
+        return self.sendcommand("setVideoStreamParam",
+                                {'streamType': streamType, 'bitRate': bitRate, ' frameRate': frameRate, 'GOP': GOP,
+                                 'isVBR': isVBR})
 
-    def setSubVideoStreamType(self,format):
+    def getMainVideoStreamType(self):
+        return self.sendcommand("getMainVideoStreamType")
+
+    def getSubVideoStreamType(self):
+        return self.sendcommand("getSubVideoStreamType", doBool=["isVBR0", "isVBR1", "isVBR2", "isVBR3"])
+
+    def setMainVideoStreamType(self, streamType):
+        return self.sendcommand("setMainVideoStreamType", {'streamType': streamType})
+
+    def setSubVideoStreamType(self, format):
         """ format: 0: H264, 1=MJpeg
         """
         return self.sendcommand("setSubVideoStreamType", {'format': format})
@@ -517,29 +560,34 @@ class camBase(object):
         """
         return self.MJStreamURL
 
-    def getOsdSetting(self):
-        return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
+    def getRTSPStream(self):
+        return self.RTSPStreamURL
 
-    def setOsdSetting(self,isEnableTimeStamp,isEnableDevName,dispPos):
+    def getOsdSetting(self):
+        return self.sendcommand("getOSDSetting", doBool=["isEnableTimeStamp", "isEnableDevName", "isEnableOSDMask"])
+
+    def setOsdSetting(self, isEnableTimeStamp, isEnableDevName, dispPos):
         """
         .. note: The parameter isEnableOSDMask which is described in the API has no effect. See setOsdMask
         """
         return self.sendcommand("setOSDSetting",
-            param={'isEnableTimeStamp':isEnableTimeStamp, 'isEnableDevName':isEnableDevName, 'dispPos':dispPos },
-            doBool=["isEnableTimeStamp","isEnableDevName"])
+                                param={'isEnableTimeStamp': isEnableTimeStamp, 'isEnableDevName': isEnableDevName,
+                                       'dispPos': dispPos},
+                                doBool=["isEnableTimeStamp", "isEnableDevName"])
 
     def setOsdMask(self, isEnableOSDMask):
         """ set/reset para,eter isEnableOSDMask
         .. note: This is an undocumented CGI command
         """
         return self.sendcommand("setOSDMask",
-            param={'isEnableOSDMask':isEnableOSDMask },
-            doBool=["isEnableOSDMask"])
+                                param={'isEnableOSDMask': isEnableOSDMask},
+                                doBool=["isEnableOSDMask"])
+
     def getOsdMask(self):
         """
         .. note: This is an undocumented CGI command
         """
-        return self.sendcommand("getOSDMask", doBool=["isEnableTimeStamp","isEnableDevName","isEnableOSDMask"])
+        return self.sendcommand("getOSDMask", doBool=["isEnableTimeStamp", "isEnableDevName", "isEnableOSDMask"])
 
     def getOsdMaskArea(self):
         w = self.sendcommand("getOsdMaskArea")
@@ -556,12 +604,12 @@ class camBase(object):
                 try:
                     areas[cnt] = (int(p1), int(p2), int(p3), int(p4))
                 except ValueError:
-                    error = True     # something is seriously wrong (new firmware?)
+                    error = True  # something is seriously wrong (new firmware?)
             else:
                 break
             cnt += 1
 
-        if not error: w.set("decoded_areas",areas)
+        if not error: w.set("decoded_areas", areas)
         return w
 
     def setOsdMaskArea(self, areas):
@@ -576,69 +624,97 @@ class camBase(object):
         maxareas = 4
 
         # make sure all areas are covered
-        for a in range(maxareas): # 0,1,2,3
+        for a in range(maxareas):  # 0,1,2,3
             if not a in areas:
                 areas[a] = None
 
         # convert None to (0,0,0,0)
         for a in areas:
             if areas[a] is None:
-                areas[a] = (0,0,0,0)
+                areas[a] = (0, 0, 0, 0)
 
         # construct parameters
         params = {}
-        for a in range(maxareas): # 0..3
+        for a in range(maxareas):  # 0..3
             params["x1_%s" % a] = areas[a][0]
             params["y1_%s" % a] = areas[a][1]
             params["x2_%s" % a] = areas[a][2]
             params["y2_%s" % a] = areas[a][3]
 
-        return self.sendcommand("setOsdMaskArea", param = params)
+        return self.sendcommand("setOsdMaskArea", param=params)
 
 
     def getMotionDetectConfig(self):
         return self.sendcommand("getMotionDetectConfig", doBool=["isEnable"])
 
-    def setMotionDetectConfig(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
+    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
         param = {"isEnable": isEnable,
                  "linkage": linkage,
-                 "triggerInterval": triggerInterval }
+                 "triggerInterval": triggerInterval}
         for day in range(7):
             param["schedule%s" % day] = schedules[day]
         for row in range(10):
             param["area%s" % row] = areas[row]
 
-        return self.sendcommand("setMotionDetectConfig", param = param, doBool=["isEnable"])
+        return self.sendcommand("setMotionDetectConfig", param=param, doBool=["isEnable"])
 
 
     # ptz commands
-    def ptzReset(self):   return self.sendcommand("ptzReset")
-    def ptzMoveDown(self): return self.sendcommand("ptzMoveDown")
-    def ptzMoveUp(self): return self.sendcommand("ptzMoveUp")
-    def ptzMoveLeft(self): return self.sendcommand("ptzMoveLeft")
-    def ptzMoveTopLeft(self): return self.sendcommand("ptzMoveTopLeft")
-    def ptzMoveBottomLeft(self): return self.sendcommand("ptzMoveBottomLeft")
-    def ptzMoveRight(self): return self.sendcommand("ptzMoveRight")
-    def ptzMoveTopRight(self): return self.sendcommand("ptzMoveTopRight")
-    def ptzMoveBottomRight(self): return self.sendcommand("ptzMoveBottomRight")
-    def ptzStopRun(self): return self.sendcommand("ptzStopRun")
+    def ptzReset(self):
+        return self.sendcommand("ptzReset")
 
-    def getPTZPresetPointList(self): return self.sendcommand("getPTZPresetPointList")
+    def ptzMoveDown(self):
+        return self.sendcommand("ptzMoveDown")
 
-    def getPTZSpeed(self): return self.sendcommand("getPTZSpeed")
-    def setPTZSpeed(self,speed): return self.sendcommand("setPTZSpeed", {"speed": speed} )
+    def ptzMoveUp(self):
+        return self.sendcommand("ptzMoveUp")
 
-    def getPTZSelfTestMode(self): return self.sendcommand("getPTZSelfTestMode")
+    def ptzMoveLeft(self):
+        return self.sendcommand("ptzMoveLeft")
 
-    def setPTZSelfTestMode(self, mode): return self.sendcommand("setPTZSelfTestMode", param = {"mode": mode})
+    def ptzMoveTopLeft(self):
+        return self.sendcommand("ptzMoveTopLeft")
 
-    def getPTZPrePointForSelfTest(self): return self.sendcommand("getPTZPrePointForSelfTest")
+    def ptzMoveBottomLeft(self):
+        return self.sendcommand("ptzMoveBottomLeft")
 
-    def setPTZPrePointForSelfTest(self, name): return self.sendcommand("setPTZPrePointForSelfTest", param = {"name": name})
+    def ptzMoveRight(self):
+        return self.sendcommand("ptzMoveRight")
 
-    def get485Info(self): return self.sendcommand("get485Info")
+    def ptzMoveTopRight(self):
+        return self.sendcommand("ptzMoveTopRight")
 
-    def set485Info(self,rs485Protocol,rs485Addr, rs485Baud, rs485DataBit, rs485StopBit, rs485Check):
+    def ptzMoveBottomRight(self):
+        return self.sendcommand("ptzMoveBottomRight")
+
+    def ptzStopRun(self):
+        return self.sendcommand("ptzStopRun")
+
+    def getPTZPresetPointList(self):
+        return self.sendcommand("getPTZPresetPointList")
+
+    def getPTZSpeed(self):
+        return self.sendcommand("getPTZSpeed")
+
+    def setPTZSpeed(self, speed):
+        return self.sendcommand("setPTZSpeed", {"speed": speed})
+
+    def getPTZSelfTestMode(self):
+        return self.sendcommand("getPTZSelfTestMode")
+
+    def setPTZSelfTestMode(self, mode):
+        return self.sendcommand("setPTZSelfTestMode", param={"mode": mode})
+
+    def getPTZPrePointForSelfTest(self):
+        return self.sendcommand("getPTZPrePointForSelfTest")
+
+    def setPTZPrePointForSelfTest(self, name):
+        return self.sendcommand("setPTZPrePointForSelfTest", param={"name": name})
+
+    def get485Info(self):
+        return self.sendcommand("get485Info")
+
+    def set485Info(self, rs485Protocol, rs485Addr, rs485Baud, rs485DataBit, rs485StopBit, rs485Check):
         param = {"rs485Protocol": rs485Protocol,
                  "rs485Addr": rs485Addr,
                  "rs485Baud": rs485Baud,
@@ -646,11 +722,12 @@ class camBase(object):
                  "rs485StopBit": rs485StopBit,
                  "rs485Check": rs485Check}
 
-        return self.sendcommand("set485Info", param = param)
+        return self.sendcommand("set485Info", param=param)
 
-    def getIPInfo(self): return self.sendcommand("getIPInfo", doBool=["isDHCP"])
+    def getIPInfo(self):
+        return self.sendcommand("getIPInfo", doBool=["isDHCP"])
 
-    def setIPInfo(self,isDHCP, ip, gate, mask, dns1, dns2):
+    def setIPInfo(self, isDHCP, ip, gate, mask, dns1, dns2):
         """
         .. note:: system will reboot after successful completion
         """
@@ -660,18 +737,23 @@ class camBase(object):
                  "mask": mask,
                  "dns1": dns1,
                  "dns2": dns2}
-        return self.sendcommand("setIpInfo", param = param, doBool=["isDHCP"])
+        return self.sendcommand("setIpInfo", param=param, doBool=["isDHCP"])
 
 
-    def zoomIn(self):   return self.sendcommand("zoomIn")
-    def zoomOut(self):  return self.sendcommand("zoomOut")
-    def zoomStop(self): return self.sendcommand("zoomStop")
+    def zoomIn(self):
+        return self.sendcommand("zoomIn")
 
-    def setSnapSetting(self,quality,location):
-        return self.sendcommand("setSnapSetting",{"snapPicQuality": quality, "saveLocation": location})
+    def zoomOut(self):
+        return self.sendcommand("zoomOut")
+
+    def zoomStop(self):
+        return self.sendcommand("zoomStop")
+
+    def setSnapSetting(self, quality, location):
+        return self.sendcommand("setSnapSetting", {"snapPicQuality": quality, "saveLocation": location})
 
     def getWifiConfig(self):
-        return self.sendcommand("getWifiConfig", doBool=["isEnable","isUseWifi","isConnected"])
+        return self.sendcommand("getWifiConfig", doBool=["isEnable", "isUseWifi", "isConnected"])
 
     def refreshWifiList(self):
         """
@@ -679,8 +761,8 @@ class camBase(object):
         """
         return self.sendcommand("refreshWifiList")
 
-    def getWifiList(self, startNo = None):
-        return self.sendcommand("getWifiList", param = {"startNo": startNo})
+    def getWifiList(self, startNo=None):
+        return self.sendcommand("getWifiList", param={"startNo": startNo})
 
     def rebootSystem(self):
         return self.sendcommand("rebootSystem")
@@ -697,13 +779,13 @@ class camBase(object):
 
         if w.result == 0:
             link = "/configs/export/%s" % w.fileName
-            link2 = urlparse.urljoin(self.base,link)
+            link2 = urlparse.urljoin(self.base, link)
             data = urllib.urlopen(link2).read()
             return (data, w.fileName)
         else:
             return None
 
-    def importConfig(self,filedata,filename):
+    def importConfig(self, filedata, filename):
         """ send config file to camera
         :param filedata: binary content of the config file
         :param filename: filename of the config file
@@ -712,7 +794,7 @@ class camBase(object):
         fields = {'submit': 'import'}
         files = {'file': {'filename': filename, 'content': filedata}}
         data, headers = encode_multipart(fields, files)
-        return self.sendcommand("importConfig", headers = headers, data = data)
+        return self.sendcommand("importConfig", headers=headers, data=data)
 
 
     def snapPicture(self):
@@ -721,7 +803,7 @@ class camBase(object):
         :return: html file with link to image
         """
 
-        return self.sendcommand("snapPicture", raw = True)
+        return self.sendcommand("snapPicture", raw=True)
 
     def snapPicture2(self):
         """ queries the camera for a snapshot
@@ -732,7 +814,7 @@ class camBase(object):
         """
         return self.sendcommand("snapPicture2")
 
-    def infraLed(self,state):
+    def infraLed(self, state):
         """ switches the IR-LED on or off
         .. note:: Depending on the camera configuration, this may not be possible.
         :param state: on (true) or off (false)
@@ -743,77 +825,80 @@ class camBase(object):
         else:
             return self.sendcommand("closeInfraLed")
 
-    def setInfraLedConfig(self,auto):
+    def setInfraLedConfig(self, auto):
         if auto:
-            return self.sendcommand("setInfraLedConfig",{"mode": 0})
+            return self.sendcommand("setInfraLedConfig", {"mode": 0})
         else:
-            return self.sendcommand("setInfraLedConfig",{"mode": 1})
+            return self.sendcommand("setInfraLedConfig", {"mode": 1})
 
-    def getDevInfo(self):   return self.sendcommand("getDevInfo")
+    def getDevInfo(self):
+        return self.sendcommand("getDevInfo")
 
     def setWifiSetting(self, enable, useWifi, ap, encr, psk, auth,
-         defaultKey, key1, key2, key3, key4, key1len, key2len, key3len, key4len):
+                       defaultKey, key1, key2, key3, key4, key1len, key2len, key3len, key4len):
         self.sendcommand("setWifiSetting", {
-             "isEnable": enable,
-             "isUseWifi": useWifi,
-             "ssid": ap,
-             "netType": 0,
-             "encryptType": encr,
-             "psk": psk,
-             "authMode": auth,
-             "defaultKey": defaultKey,
-             "key1": key1,
-             "key2": key2,
-             "key3": key3,
-             "key4": key4,
-             "key1len": key1len,
-             "key2len": key2len,
-             "key3len": key3len,
-             "key4len": key4len
+            "isEnable": enable,
+            "isUseWifi": useWifi,
+            "ssid": ap,
+            "netType": 0,
+            "encryptType": encr,
+            "psk": psk,
+            "authMode": auth,
+            "defaultKey": defaultKey,
+            "key1": key1,
+            "key2": key2,
+            "key3": key3,
+            "key4": key4,
+            "key1len": key1len,
+            "key2len": key2len,
+            "key3len": key3len,
+            "key4len": key4len
         })
 
-    def ptzAddPresetPoint(self,name):
-        return self.sendcommand("ptzAddPresetPoint", {"name": name} )
+    def ptzAddPresetPoint(self, name):
+        return self.sendcommand("ptzAddPresetPoint", {"name": name})
 
-    def ptzDeletePresetPoint(self,name):
-        return self.sendcommand("ptzDeletePresetPoint", {"name": name} )
+    def ptzDeletePresetPoint(self, name):
+        return self.sendcommand("ptzDeletePresetPoint", {"name": name})
 
-    def ptzGotoPresetPoint(self,name):
-        return self.sendcommand("ptzGotoPresetPoint", {"name": name} )
+    def ptzGotoPresetPoint(self, name):
+        return self.sendcommand("ptzGotoPresetPoint", {"name": name})
 
     def ptzGetCruiseMapList(self):
         return self.sendcommand("ptzGetCruiseMapList")
 
-    def ptzGetCruiseMapInfo(self,name):
-        return self.sendcommand("ptzGetCruiseMapInfo", {"name": name} )
+    def ptzGetCruiseMapInfo(self, name):
+        return self.sendcommand("ptzGetCruiseMapInfo", {"name": name})
 
     def ptzSetCruiseMap(self, name, points):
         param = {"name": name}
-        param.update(array2dict(points,"point"))
-        return self.sendcommand("ptzSetCruiseMap", param = param)
+        param.update(array2dict(points, "point"))
+        return self.sendcommand("ptzSetCruiseMap", param=param)
 
     def ptzDelCruiseMap(self, name):
-        return self.sendcommand("ptzDelCruiseMap", param = {"name": name})
+        return self.sendcommand("ptzDelCruiseMap", param={"name": name})
 
     def ptzStartCruise(self, mapName):
-        return self.sendcommand("ptzStartCruise", param = {"mapName": mapName})
+        return self.sendcommand("ptzStartCruise", param={"mapName": mapName})
 
     def ptzStopCruise(self):
         return self.sendcommand("ptzStopCruise")
 
+    def getDevState(self):
+        return self.sendcommand("getDevState")
 
-    def getDevState(self):  return self.sendcommand("getDevState")
     def getSnapConfig(self):
         return self.sendcommand("getSnapConfig")
-    def setSnapConfig(self,quality, location):
-        return self.sendcommand("setSnapConfig", {"snapPicQuality": quality, "saveLocation": location} )
 
-    def getRecordList(self, recordPath = None, startTime = None, endTime = None, recordType = None, startNo = None):
+    def setSnapConfig(self, quality, location):
+        return self.sendcommand("setSnapConfig", {"snapPicQuality": quality, "saveLocation": location})
+
+    def getRecordList(self, recordPath=None, startTime=None, endTime=None, recordType=None, startNo=None):
         param = {"recordPath": recordPath,
                  "startTime": startTime,
                  "endTime": endTime,
                  "recordType": recordType,
-                 "startNo": startNo }
+                 "startNo": startNo}
         return self.sendcommand("getRecordList", param=param)
 
     def getAlarmRecordConfig(self):
@@ -822,7 +907,7 @@ class camBase(object):
     def setAlarmRecordConfig(self, isEnablePreRecord, preRecordSecs, alarmRecordSecs):
         param = {"isEnablePreRecord": isEnablePreRecord,
                  "preRecordSecs": preRecordSecs,
-                 "alarmRecordSecs": alarmRecordSecs }
+                 "alarmRecordSecs": alarmRecordSecs}
         return self.sendcommand("setAlarmRecordConfig", param=param, doBool=["isEnablePreRecord"])
 
     def getIOAlarmConfig(self):
@@ -834,8 +919,8 @@ class camBase(object):
                  "alarmLevel": alarmLevel,
                  "snapInterval": snapInterval,
                  "triggerInterval": triggerInterval
-                 }
-        param.update( array2dict(schedules,"schedule") )
+        }
+        param.update(array2dict(schedules, "schedule"))
         return self.sendcommand("setIOAlarmConfig", param=param, doBool=["isEnable"])
 
     def clearIOAlarmOutput(self):
@@ -844,33 +929,33 @@ class camBase(object):
     def getMultiDevList(self):
         return self.sendcommand("getMultiDevList")
 
-    def getMultiDevDetailInfo(self,channel):
-        return self.sendcommand("getMultiDevDetailInfo", param = {"chnnl": channel})
+    def getMultiDevDetailInfo(self, channel):
+        return self.sendcommand("getMultiDevDetailInfo", param={"chnnl": channel})
 
-    def addMultiDev(selfself,channel, productType, ip, port, mediaPort, userName, passWord, devName):
-        return self.sendcommand("addMultiDev", param = {"chnnl": channel,
-                                                        "productType": productType,
-                                                        "ip": ip,
-                                                        "port": port,
-                                                        "mediaPort": mediaPort,
-                                                        "userName": userName,
-                                                        "passWord": passWord,
-                                                        "devName": devName })
+    def addMultiDev(self, channel, productType, ip, port, mediaPort, userName, passWord, devName):
+        return self.sendcommand("addMultiDev", param={"chnnl": channel,
+                                                      "productType": productType,
+                                                      "ip": ip,
+                                                      "port": port,
+                                                      "mediaPort": mediaPort,
+                                                      "userName": userName,
+                                                      "passWord": passWord,
+                                                      "devName": devName})
 
-    def delMultiDev(self,channel):
-        return self.sendcommand("delMultiDev", param = {"chnnl": channel})
+    def delMultiDev(self, channel):
+        return self.sendcommand("delMultiDev", param={"chnnl": channel})
 
     def addAccount(self, usrName, usrPwd, privilege):
-        return self.sendcommand("addAccount",param = {"usrName": usrName, "usrPwd": usrPwd, "privilege": privilege})
+        return self.sendcommand("addAccount", param={"usrName": usrName, "usrPwd": usrPwd, "privilege": privilege})
 
     def delAccount(self, usrName):
-        return self.sendcommand("delAccount",param = {"usrName": usrName} )
+        return self.sendcommand("delAccount", param={"usrName": usrName})
 
     def changePassword(self, usrName, oldPwd, newPwd):
-        return self.sendcommand("changePassword",param = {"usrName": usrName, "oldPwd": oldPwd, "newPwd": newPwd} )
+        return self.sendcommand("changePassword", param={"usrName": usrName, "oldPwd": oldPwd, "newPwd": newPwd})
 
     def changeUserName(self, usrName, newUsrName):
-        return self.sendcommand("changeUserName",param = {"usrName": usrName, "newUsrName": newUsrName } )
+        return self.sendcommand("changeUserName", param={"usrName": usrName, "newUsrName": newUsrName})
 
     def getSessionList(self):
         return self.sendcommand("getSessionList")
@@ -878,50 +963,52 @@ class camBase(object):
     def getUserList(self):
         return self.sendcommand("getUserList")
 
-    def logIn(self,name, ip=None, groupId = None):
+    def logIn(self, name, ip=None, groupId=None):
         param = {"usrName": name}
-        if not ip is None: param["ip"]=ip
+        if not ip is None: param["ip"] = ip
         if not groupId is None: param["groupId"] = groupId
-        r = self.sendcommand("logIn", param )
+        r = self.sendcommand("logIn", param)
         if r.result == 0:
             if not r.logInResult is None:
                 r.set("result", -int(r.logInResult))
         return r
 
-    def logOut(self,name, ip=None, groupId = None):
+    def logOut(self, name, ip=None, groupId=None):
         param = {"usrName": name}
-        if not ip is None: param["ip"]=ip
+        if not ip is None: param["ip"] = ip
         if not groupId is None: param["groupId"] = groupId
-        r = self.sendcommand("logOut", param )
+        r = self.sendcommand("logOut", param)
         return r
 
     def usrBeatHeart(self, usrName, remoteIp=None, groupId=None):
-        return self.sendcommand("usrBeatHeart", param={"usrName": usrName, "remoteIp":remoteIp, "groupId":groupId})
+        return self.sendcommand("usrBeatHeart", param={"usrName": usrName, "remoteIp": remoteIp, "groupId": groupId})
 
     def getFirewallConfig(self):
         return self.sendcommand("getFirewallConfig", doBool=["isEnable"])
 
-    def setFirewallConfig(self,isEnable, rule, ipList):
+    def setFirewallConfig(self, isEnable, rule, ipList):
         param = {"isEnable": isEnable,
                  "rule": rule}
-        ips = array2dict(ipList,"ipList")
+        ips = array2dict(ipList, "ipList")
         param.update(ips)
-        return self.sendcommand("setFirewallConfig",param = param, doBool=["isEnable"])
+        return self.sendcommand("setFirewallConfig", param=param, doBool=["isEnable"])
 
     def getLog(self, offset=None, count=None):
-        return self.sendcommand("getLog", {"offset": offset, "count":count} )
+        return self.sendcommand("getLog", {"offset": offset, "count": count})
 
     def getPortInfo(self):
         return self.sendcommand("getPortInfo")
 
-    def setPortInfo(self,webPort, mediaPort, httpsPort, onvifPort):
-        return self.sendcommand("setPortInfo", param = {"webPort": webPort, "mediaPort": mediaPort, "httpsPort": httpsPort, "onvifPort": onvifPort})
+    def setPortInfo(self, webPort, mediaPort, httpsPort, onvifPort):
+        return self.sendcommand("setPortInfo",
+                                param={"webPort": webPort, "mediaPort": mediaPort, "httpsPort": httpsPort,
+                                       "onvifPort": onvifPort})
 
     def getUPnPConfig(self):
         return self.sendcommand("getUPnPConfig", doBool=["isEnable"])
 
     def setUPnPConfig(self, enable):
-        return self.sendcommand("setUPnPConfig", param = {"isEnable": enable}, doBool=["isEnable"])
+        return self.sendcommand("setUPnPConfig", param={"isEnable": enable}, doBool=["isEnable"])
 
     def getDDNSConfig(self):
         return self.sendcommand("getDDNSConfig", doBool=["isEnable"])
@@ -937,67 +1024,69 @@ class camBase(object):
     def getFTPConfig(self):
         return self.sendcommand("getFtpConfig")
 
-    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password ):
-        param = { "ftpAddr": ftpAddr,
-                  "ftpPort": ftpPort,
-                  "mode": mode,
-                  "userName": userName,
-                  "password": password}
-        return self.sendcommand("setFtpConfig", param = param )
+    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password):
+        param = {"ftpAddr": ftpAddr,
+                 "ftpPort": ftpPort,
+                 "mode": mode,
+                 "userName": userName,
+                 "password": password}
+        return self.sendcommand("setFtpConfig", param=param)
 
-    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password ):
-        param = { "ftpAddr": ftpAddr,
-                  "ftpPort": ftpPort,
-                  "mode": mode,
-                  "userName": userName,
-                  "password": password}
-        return self.sendcommand("testFtpServer", param = param )
+    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password):
+        param = {"ftpAddr": ftpAddr,
+                 "ftpPort": ftpPort,
+                 "mode": mode,
+                 "userName": userName,
+                 "password": password}
+        return self.sendcommand("testFtpServer", param=param)
 
     def getSMTPConfig(self):
-        return self.sendcommand("getSMTPConfig", doBool= ["isEnable", "isNeedAuth"])
+        return self.sendcommand("getSMTPConfig", doBool=["isEnable", "isNeedAuth"])
 
 
-    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver ):
-        param = { "isEnable": isEnable,
-                  "server": server,
-                  "port": port,
-                  "isNeedAuth": isNeedAuth,
-                  "tls": tls,
-                  "user": user,
-                  "password": password,
-                  "sender": sender,
-                  "reciever": receiver }
-        return self.sendcommand("setSMTPConfig", param = param, doBool= ["isEnable", "isNeedAuth"] )
+    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver):
+        param = {"isEnable": isEnable,
+                 "server": server,
+                 "port": port,
+                 "isNeedAuth": isNeedAuth,
+                 "tls": tls,
+                 "user": user,
+                 "password": password,
+                 "sender": sender,
+                 "reciever": receiver}
+        return self.sendcommand("setSMTPConfig", param=param, doBool=["isEnable", "isNeedAuth"])
 
-    def SMTPTest(self, server, port, isNeedAuth, tls, user, password ):
-        param = { "server": server,
-                  "port": port,
-                  "isNeedAuth": isNeedAuth,
-                  "tls": tls,
-                  "user": user,
-                  "password": password }
-        return self.sendcommand("smtpTest", param = param, doBool= ["isNeedAuth"] )
+    def SMTPTest(self, server, port, isNeedAuth, tls, user, password):
+        param = {"server": server,
+                 "port": port,
+                 "isNeedAuth": isNeedAuth,
+                 "tls": tls,
+                 "user": user,
+                 "password": password}
+        return self.sendcommand("smtpTest", param=param, doBool=["isNeedAuth"])
 
     def getSystemTime(self):
-        return self.sendcommand("getSystemTime", doBool=["isDst"] )
+        return self.sendcommand("getSystemTime", doBool=["isDst"])
 
-    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour, min, sec ):
-        param = { "timeSource": timeSource,
-                  "ntpServer": ntpServer,
-                  "dateFormat": dateFormat,
-                  "timeFormat": timeFormat,
-                  "timeZone": timeZone,
-                  "isDst": isDst,
-                  "dst": dst,
-                  "year": year,
-                  "month": month,
-                  "day": day,
-                  "hour": hour,
-                  "min": min,
-                  "sec": sec}
-        return self.sendcommand("setSystemTime", param = param, doBool=["isDst"])
+    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour,
+                      min, sec):
+        param = {"timeSource": timeSource,
+                 "ntpServer": ntpServer,
+                 "dateFormat": dateFormat,
+                 "timeFormat": timeFormat,
+                 "timeZone": timeZone,
+                 "isDst": isDst,
+                 "dst": dst,
+                 "year": year,
+                 "month": month,
+                 "day": day,
+                 "hour": hour,
+                 "min": min,
+                 "sec": sec}
+        return self.sendcommand("setSystemTime", param=param, doBool=["isDst"])
 
-class cam(camBase):
+
+class Cam(CamBase):
     """ extended interface
 
     Some more conversions:
@@ -1018,11 +1107,12 @@ class cam(camBase):
         .         s
 
         """
-        matrix = {'n': self.ptzMoveUp, 'ne': self.ptzMoveTopRight, 'e': self.ptzMoveRight, 'se': self.ptzMoveBottomRight,
+        matrix = {'n': self.ptzMoveUp, 'ne': self.ptzMoveTopRight, 'e': self.ptzMoveRight,
+                  'se': self.ptzMoveBottomRight,
                   's': self.ptzMoveDown, 'sw': self.ptzMoveBottomLeft, 'w': self.ptzMoveLeft, 'nw': self.ptzMoveTopLeft,
-                  'h': self.ptzReset }
+                  'h': self.ptzReset}
         fkt = matrix.get(direction.lower())
-        assert not fkt is None,"Invalid ptz direction"
+        assert not fkt is None, "Invalid ptz direction"
         return fkt()
 
     def snapPicture(self):
@@ -1031,9 +1121,9 @@ class cam(camBase):
         .. note:: This higher function uses the :func:`snapPicture` API call, as :func:`snapPicture2` is currently
                   limited to 512,000 bytes (bug in firmware)
         """
-        w = camBase.snapPicture(self)
+        w = CamBase.snapPicture(self)
         # <html><body><img src="../snapPic/Snap_20131027-114838.jpg"/></body></html>
-        res = re.search("img src=\"(.+)\"",w)
+        res = re.search("img src=\"(.+)\"", w)
         if res is None: return (None, None)
 
         link = res.group(1)
@@ -1041,15 +1131,15 @@ class cam(camBase):
         p = ipath.rfind("/")
 
         if p == -1: return (None, None)
-        fname = ipath[p+1:]
+        fname = ipath[p + 1:]
 
-        link2 = urlparse.urljoin(self.base,link)
+        link2 = urlparse.urljoin(self.base, link)
 
         data = urllib.urlopen(link2).read()
         return (data, fname)
 
     def getPTZSpeed(self):
-        res = camBase.getPTZSpeed(self)
+        res = CamBase.getPTZSpeed(self)
         res.stringLookupConv(res.speed, DC_ptzSpeedList, "_speed")
         return res
 
@@ -1059,7 +1149,7 @@ class cam(camBase):
         :return: unsorted python string list
         """
         res = []
-        w = camBase.getPTZPresetPointList(self)
+        w = CamBase.getPTZPresetPointList(self)
 
         try:
             poicnt = int(w.cnt)
@@ -1075,22 +1165,23 @@ class cam(camBase):
         """ activates OSD mask areas
         :param areas: area definition {0: (x1,y2,x2,y2), 1: ..., 3: ...}
         """
-        res = self.setOsdMask(isEnableOSDMask = True)
+        res = self.setOsdMask(isEnableOSDMask=True)
         if res.result == 0:
             self.setOsdMaskArea(areas)
 
     def deactivateOsdmask(self):
         """ deactivates the OsdMask(s)
         """
-        res = self.setOsdMask(isEnableOSDMask = False)
+        res = self.setOsdMask(isEnableOSDMask=False)
         if res.result == 0:
             # send the command twice
             # a single call does not switch it off reliably
-            self.setOsdMask(isEnableOSDMask = False)
+            self.setOsdMask(isEnableOSDMask=False)
 
     def getWifiList(self):
         def toBool(s):
             return s != "0"
+
         def conv(s):
             if s == "": return None
             ma = re.search("(.+)\+(.+?)\+(\d+)\+(\d+)\+(\d+)$", s)
@@ -1101,26 +1192,26 @@ class cam(camBase):
                 "mac": ma.group(2),
                 "quality": int(ma.group(3)),
                 "encrypted": toBool(ma.group(4)),
-                "encryption": DC_WifiEncryption.get(ma.group(5),"enctype %s" % ma.group(5))
+                "encryption": DC_WifiEncryption.get(ma.group(5), "enctype %s" % ma.group(5))
             }
 
-        res = camBase.getWifiList(self)
+        res = CamBase.getWifiList(self)
         total = int(res.totalCnt)
         offset = 0
         bigarray = []
         while offset < total:
-            res.collectArray("ap","_ap", convertFunc = conv)
+            res.collectArray("ap", "_ap", convertFunc=conv)
             bigarray += res._ap
             offset += 10
-            res.stringLookupConv(res.encryptType,DC_WifiEncryption,"_encryptType")
-            res.stringLookupConv(res.authType, DC_WifiAuth,"_authType")
-            res = camBase.getWifiList(self,startNo=offset)
-        res.set("_ap",bigarray)
+            res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
+            res.stringLookupConv(res.authType, DC_WifiAuth, "_authType")
+            res = CamBase.getWifiList(self, startNo=offset)
+        res.set("_ap", bigarray)
 
         return res
 
     def getWifiConfig(self):
-        res = camBase.getWifiConfig(self)
+        res = CamBase.getWifiConfig(self)
         res.stringLookupConv(res.encryptType, DC_WifiEncryption, "_encryptType")
         res.stringLookupConv(res.authMode, DC_WifiAuth, "_authMode")
         return res
@@ -1128,7 +1219,7 @@ class cam(camBase):
     # this function sets WPA config only
     def setWifiSettingWPA(self, enable, useWifi, ap, encr, psk, auth):
         self.setWifiSetting(enable, useWifi, ap, encr, psk, auth,
-            1, "", "", "", "", 64, 64, 64, 64)
+                            1, "", "", "", "", 64, 64, 64, 64)
 
     def getMotionDetectConfig(self):
         """ get motion detection configuration with decoded information
@@ -1140,57 +1231,57 @@ class cam(camBase):
         _linkage: array of alarm action
         """
 
-        res = camBase.getMotionDetectConfig(self)
-        res.stringLookupConv(res.sensitivity,DC_motionDetectSensitivity,"_sensitivity")
+        res = CamBase.getMotionDetectConfig(self)
+        res.stringLookupConv(res.sensitivity, DC_motionDetectSensitivity, "_sensitivity")
 
-        res.collectBinaryArray("schedule","_schedules",48)
-        res.collectBinaryArray("area","_areas",10)
-        res.DB_convert2array("linkage","_linkage", BD_alarmAction)
+        res.collectBinaryArray("schedule", "_schedules", 48)
+        res.collectBinaryArray("area", "_areas", 10)
+        res.DB_convert2array("linkage", "_linkage", BD_alarmAction)
 
         return res
 
-    def setMotionDetectConfig(self,isEnable, linkage, snapInterval, triggerInterval,schedules,areas):
-        camBase.setMotionDetectConfig(self,
-            isEnable,
-            BD_alarmAction.toInt(linkage),
-            snapInterval,
-            triggerInterval,
-            binaryarray2int(schedules),
-            binaryarray2int(areas) )
+    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
+        CamBase.setMotionDetectConfig(self,
+                                      isEnable,
+                                      BD_alarmAction.toInt(linkage),
+                                      snapInterval,
+                                      triggerInterval,
+                                      binaryarray2int(schedules),
+                                      binaryarray2int(areas))
 
     def getSnapConfig(self):
-        res = camBase.getSnapConfig(self)
+        res = CamBase.getSnapConfig(self)
         res.stringLookupSet(res.snapPicQuality,
-            {"0":"low", "1": "normal", "2": "high"},
-            "_snapPicQuality")
+                            {"0": "low", "1": "normal", "2": "high"},
+                            "_snapPicQuality")
         res.stringLookupSet(res.saveLocation,
-            {"0":"SD card", "1": "reserved", "2": "FTP"},
-            "_saveLocation")
+                            {"0": "SD card", "1": "reserved", "2": "FTP"},
+                            "_saveLocation")
         return res
 
     def getIOAlarmConfig(self):
-        res = camBase.getIOAlarmConfig(self)
-        res.collectBinaryArray("schedule","_schedules",48)
-        res.DB_convert2array("linkage","_linkage", BD_alarmAction)
+        res = CamBase.getIOAlarmConfig(self)
+        res.collectBinaryArray("schedule", "_schedules", 48)
+        res.DB_convert2array("linkage", "_linkage", BD_alarmAction)
         return res
 
-    def setIOAlarmConfig(self,isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules ):
-        res = camBase.setIOAlarmConfig(self,
-            isEnable,
-            BD_alarmAction.toInt(linkage),
-            alarmLevel,
-            snapInterval,
-            triggerInterval,
-            binaryarray2int(schedules) )
+    def setIOAlarmConfig(self, isEnable, linkage, alarmLevel, snapInterval, triggerInterval, schedules):
+        res = CamBase.setIOAlarmConfig(self,
+                                       isEnable,
+                                       BD_alarmAction.toInt(linkage),
+                                       alarmLevel,
+                                       snapInterval,
+                                       triggerInterval,
+                                       binaryarray2int(schedules))
         return res
 
     def getFirewallConfig(self):
-        res =  camBase.getFirewallConfig(self)
-        res.collectArray("ipList","_ipList", convertFunc = lambda x: long2ip(int(x)))
+        res = CamBase.getFirewallConfig(self)
+        res.collectArray("ipList", "_ipList", convertFunc=lambda x: long2ip(int(x)))
         return res
 
-    def setFirewallConfig(self,isEnable, rule, ipList):
-        return camBase.setFirewallConfig(self, isEnable, rule, arrayTransform(ipList, convertFunc = lambda x: ip2long(x)) )
+    def setFirewallConfig(self, isEnable, rule, ipList):
+        return CamBase.setFirewallConfig(self, isEnable, rule, arrayTransform(ipList, convertFunc=lambda x: ip2long(x)))
 
     def getLog(self):
         def conv(s):
@@ -1214,108 +1305,110 @@ class cam(camBase):
                 datetime.datetime.fromtimestamp(int(ma.group(1))),
                 ma.group(2),
                 long2ip(int(ma.group(3))),
-                DC_logtype.get(ma.group(4),"type %s" % ma.group(4))
+                DC_logtype.get(ma.group(4), "type %s" % ma.group(4))
             )
-        res = camBase.getLog(self)
+
+        res = CamBase.getLog(self)
         total = int(res.totalCnt)
         curcnt = int(res.curCnt)
         offset = 0
         bigarray = []
         while offset < total:
-            res.collectArray("log","_log", convertFunc = conv)
+            res.collectArray("log", "_log", convertFunc=conv)
             bigarray += res._log
             offset += 10
-            res = camBase.getLog(self,offset=offset)
-        res.set("_log",bigarray)
+            res = CamBase.getLog(self, offset=offset)
+        res.set("_log", bigarray)
         return res
 
-    def ptzAddPresetPoint(self,name):
-        res = camBase.ptzAddPresetPoint(self,name)
+    def ptzAddPresetPoint(self, name):
+        res = CamBase.ptzAddPresetPoint(self, name)
         res.extendedResult("addResult")
         return res
 
-    def ptzDeletePresetPoint(self,name):
-        res = camBase.ptzDeletePresetPoint(self,name)
+    def ptzDeletePresetPoint(self, name):
+        res = CamBase.ptzDeletePresetPoint(self, name)
         res.extendedResult("deleteResult")
         return res
 
     def ptzGetCruiseMapList(self):
-        res = camBase.ptzGetCruiseMapList(self)
-        res.collectArray("map","_maps", convertFunc = emptyStringNone)
+        res = CamBase.ptzGetCruiseMapList(self)
+        res.collectArray("map", "_maps", convertFunc=emptyStringNone)
         res.extendedResult("getResult")
         return res
 
-    def ptzGetCruiseMapInfo(self,name):
-        res = camBase.ptzGetCruiseMapInfo(self, name)
-        res.collectArray("point","_points", convertFunc = emptyStringNone)
+    def ptzGetCruiseMapInfo(self, name):
+        res = CamBase.ptzGetCruiseMapInfo(self, name)
+        res.collectArray("point", "_points", convertFunc=emptyStringNone)
         res.extendedResult("getResult")
         return res
 
-    def ptzSetCruiseMap(self,name, points):
-        res = camBase.ptzSetCruiseMap(self,name,points)
+    def ptzSetCruiseMap(self, name, points):
+        res = CamBase.ptzSetCruiseMap(self, name, points)
         res.extendedResult("setResult")
         return res
 
-    def ptzDelCruiseMap(self,name):
-        res = camBase.ptzDelCruiseMap(self,name)
+    def ptzDelCruiseMap(self, name):
+        res = CamBase.ptzDelCruiseMap(self, name)
         res.extendedResult("delResult")
         return res
 
-    def ptzStartCruise(self,mapName):
-        res = camBase.ptzStartCruise(self, mapName)
+    def ptzStartCruise(self, mapName):
+        res = CamBase.ptzStartCruise(self, mapName)
         res.extendedResult("startResult")
         return res
 
     def getDDNSConfig(self):
-        res = camBase.getDDNSConfig(self)
+        res = CamBase.getDDNSConfig(self)
         res.stringLookupConv(res.ddnsServer, DC_ddnsServer, "_ddnsServer")
         return res
 
-    def setDDNSConfig(self,isEnable, hostName, ddnsServer, user, password):
-        return camBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
+    def setDDNSConfig(self, isEnable, hostName, ddnsServer, user, password):
+        return CamBase.setDDNSConfig(self, isEnable, hostName, DC_ddnsServer.lookup(ddnsServer), user, password)
 
     def getFTPConfig(self):
-        res = camBase.getFTPConfig(self)
+        res = CamBase.getFTPConfig(self)
         res.stringLookupConv(res.mode, DC_FtpMode, "_mode")
         return res
 
-    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password ):
-        return camBase.setFTPConfig(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode),userName, password)
+    def setFTPConfig(self, ftpAddr, ftpPort, mode, userName, password):
+        return CamBase.setFTPConfig(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
 
-    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password ):
-        res = camBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode),userName, password)
+    def testFTPServer(self, ftpAddr, ftpPort, mode, userName, password):
+        res = CamBase.testFTPServer(self, ftpAddr, ftpPort, DC_FtpMode.lookup(mode), userName, password)
         res.extendedResult("testResult")
         return res
 
     def getSMTPConfig(self):
-        res = camBase.getSMTPConfig(self)
+        res = CamBase.getSMTPConfig(self)
         res.stringLookupConv(res.tls, DC_SmtpTlsMode, "_tls")
         return res
 
-    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver ):
+    def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver):
         if type(receiver) == list:
             receiver = ";".join(receiver)
-        return camBase.setSMTPConfig(self,isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver)
+        return CamBase.setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver)
 
-    def SMTPTest(self, server, port, isNeedAuth, tls, user, password ):
-        res = camBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password )
+    def SMTPTest(self, server, port, isNeedAuth, tls, user, password):
+        res = CamBase.SMTPTest(self, server, port, isNeedAuth, DC_SmtpTlsMode.lookup(tls), user, password)
         res.extendedResult("testResult")
         return res
 
     def getSystemTime(self):
-        res = camBase.getSystemTime(self)
+        res = CamBase.getSystemTime(self)
         res.stringLookupConv(res.timeSource, DC_timeSource, "_timeSource")
         res.stringLookupConv(res.dateFormat, DC_timeDateFormat, "_dateFormat")
         res.stringLookupConv(res.timeFormat, DC_timeFormat, "_timeFormat")
         return res
 
-    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour, min, sec ):
-        return camBase.setSystemTime(self,
-            DC_timeSource.lookup(timeSource),
-            ntpServer,
-            DC_timeDateFormat.lookup(dateFormat),
-            DC_timeFormat.lookup(timeFormat),
-            timeZone, isDst, dst, year, month, day, hour, min, sec)
+    def setSystemTime(self, timeSource, ntpServer, dateFormat, timeFormat, timeZone, isDst, dst, year, month, day, hour,
+                      min, sec):
+        return CamBase.setSystemTime(self,
+                                     DC_timeSource.lookup(timeSource),
+                                     ntpServer,
+                                     DC_timeDateFormat.lookup(dateFormat),
+                                     DC_timeFormat.lookup(timeFormat),
+                                     timeZone, isDst, dst, year, month, day, hour, min, sec)
 
 
 if __name__ == "__main__":
@@ -1323,18 +1416,18 @@ if __name__ == "__main__":
 
     # see cam.cfg.example
     config.readfp(open('cam.cfg'))
-    prot = config.get('general','protocol')
-    host = config.get('general','host')
-    port = config.get('general','port')
-    user = config.get('general','user')
-    passwd = config.get('general','password')
+    prot = config.get('general', 'protocol')
+    host = config.get('general', 'host')
+    port = config.get('general', 'port')
+    user = config.get('general', 'user')
+    passwd = config.get('general', 'password')
 
     # connection to the camera
-    do = cam(prot,host,port,user,passwd)
+    do = Cam(prot, host, port, user, passwd)
 
     # display basic camera info
     res = do.getDevInfo()
-    if res.result == 0:       # quick check
+    if res.result == 0:  # quick check
         print """product name: %s
 serial number: %s
 camera name: %s

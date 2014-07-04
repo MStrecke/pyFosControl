@@ -1,0 +1,20 @@
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+*.orig
+*.pid
+.sass_cache
+
+#python specific
+*.pyc
+
+#data
+*.dat
+
+# dirs
+.idea
+.vagrant
+cam.cfg

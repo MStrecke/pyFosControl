@@ -17,15 +17,12 @@ There is a [SDK](http://foscam.us/forum/cgi-sdk-for-hd-camera-t6045.html#p28979 
 describing a CGI interface which seems to make most of these functions available. pyFosControl is intended as an
 python interface.
 
-At the moment it is a simple python file which can be imported by a program in the same directory.  After it becomes
-more complete, I will turn it into a regular library.
-
 Getting started
 ---------------
 
 Create a new `cam.cfg` file using `cam.cfg.example` as template.
 
-Run `pyFosControl.py` from the command line to get some basic information (like model info, firmware and hardware version).
+Run `camtest.py` from the command line to get some basic information (like model info, firmware and hardware version).
 
 Please note
 -----------

@@ -31,6 +31,5 @@ Please note
 * It's *mostly* tested on a FI9821W V2.
 * The SDK documentation is inaccurate in places.
 * The non HD cameras use a different set of CGI commands and are not covered in this implementation.
-* The behaviour of the camera changes slightly with each new firmware version.  Please include model and firmware version
-  when sending bug reports (run pyFosControl.py from the command line.
+* The behaviour of the camera changes slightly with each new firmware version.  Please include model and firmware version when sending bug reports (run `camtest.py` from the command line).
 

@@ -650,6 +650,7 @@ class CamBase(object):
     def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
         param = {"isEnable": isEnable,
                  "linkage": linkage,
+                 "snapInterval": snapInterval,
                  "triggerInterval": triggerInterval}
         for day in range(7):
             param["schedule%s" % day] = schedules[day]

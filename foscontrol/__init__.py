@@ -893,6 +893,16 @@ class CamBase(object):
     def setSnapConfig(self, quality, location):
         return self.sendcommand("setSnapConfig", {"snapPicQuality": quality, "saveLocation": location})
 
+    def getScheduleSnapConfig(self):
+        return self.sendcommand("getScheduleSnapConfig", doBool=["isEnable"])
+
+    def setScheduleSnapConfig(self, isEnable, snapInterval, schedules):
+        param = {"isEnable": isEnable,
+                 "snapInterval": snapInterval}
+        for day in range(7):
+            param["schedule%s" % day] = schedules[day]
+        return self.sendcommand("setScheduleSnapConfig", param=param, doBool=["isEnable"])
+
     def getRecordList(self, recordPath=None, startTime=None, endTime=None, recordType=None, startNo=None):
         param = {"recordPath": recordPath,
                  "startTime": startTime,
@@ -1258,6 +1268,25 @@ class Cam(CamBase):
                             {"0": "SD card", "1": "reserved", "2": "FTP"},
                             "_saveLocation")
         return res
+
+    def getScheduleSnapConfig(self):
+        """ get snap schedule configuration with decoded information
+
+        The following information is decoded:
+        _schedules: 7 strings of 48 chars, one for each day (starting with monday)
+                  each string contains "1"/"0" for each half hour of the day
+        """
+
+        res = CamBase.getScheduleSnapConfig(self)
+        res.collectBinaryArray("schedule", "_schedules", 48)
+
+        return res
+
+    def setScheduleSnapConfig(self, isEnable, snapInterval, schedules):
+        CamBase.setScheduleSnapConfig(self,
+                                      isEnable,
+                                      snapInterval,
+                                      binaryarray2int(schedules))
 
     def getIOAlarmConfig(self):
         res = CamBase.getIOAlarmConfig(self)

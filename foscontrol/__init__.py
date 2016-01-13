@@ -647,11 +647,12 @@ class CamBase(object):
     def getMotionDetectConfig(self):
         return self.sendcommand("getMotionDetectConfig", doBool=["isEnable"])
 
-    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
+    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, sensitivity, schedules, areas):
         param = {"isEnable": isEnable,
                  "linkage": linkage,
                  "snapInterval": snapInterval,
-                 "triggerInterval": triggerInterval}
+                 "triggerInterval": triggerInterval,
+                 "sensitivity": sensitivity}
         for day in range(7):
             param["schedule%s" % day] = schedules[day]
         for row in range(10):
@@ -1251,12 +1252,13 @@ class Cam(CamBase):
 
         return res
 
-    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, schedules, areas):
+    def setMotionDetectConfig(self, isEnable, linkage, snapInterval, triggerInterval, sensitivity, schedules, areas):
         CamBase.setMotionDetectConfig(self,
                                       isEnable,
                                       BD_alarmAction.toInt(linkage),
                                       snapInterval,
                                       triggerInterval,
+                                      DC_motionDetectSensitivity.lookup(sensitivity),
                                       binaryarray2int(schedules),
                                       binaryarray2int(areas))
 

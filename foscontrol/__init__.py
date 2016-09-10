@@ -1,13 +1,26 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import urllib, urllib2
-import urlparse
 import xml.dom.minidom
 import re
-import ConfigParser
 import struct, socket
 import datetime
+import sys
+
+try:
+    from urlparse import urlsplit, urljoin
+except ImportError:
+    from urllib.parse import urlsplit, urljoin
+
+try:
+    from urllib2 import urlopen, Request
+except ImportError:
+    from urllib.request import urlopen, Request
+
+try:
+    from urllib import urlencode, unquote, urlopen
+except:
+    from urllib.parse import urlencode, unquote
 
 
 def encode_multipart(fields, files, boundary=None):
@@ -98,7 +111,8 @@ class DictBits(object):
         """
         res = 0
         for v in value:
-            if not v in self.values: raise ValueError, "option %s not found" % v
+            if not v in self.values:
+                raise ValueError("option %s not found" % v)
             k = [key for key, value in self.items if value == v][0]
             res |= (1 << k)
         return res
@@ -141,7 +155,8 @@ class DictChar(object):
         . note:: this way the URL parameter could be set by either cleartext or the key
         """
         if v in self.keys: return v
-        if not v in self.values: raise ValueError, "option %s not found" % v
+        if not v in self.values:
+            raise ValueError("option %s not found" % v)
         k = [key for key, value in self.items if value == v][0]
         return k
 
@@ -372,7 +387,7 @@ class CamBase(object):
 
         # GetMJStream has is special URL
         p = {"cmd": "GetMJStream", "usr": self.user, "pwd": self.password}
-        ps = urllib.urlencode(p)
+        ps = urlencode(p)
         self.MJStreamURL = "%s://%s:%s/cgi-bin/CGIStream.cgi?%s" % (prot, host, port, ps)
         self.RTSPStreamURL = "rtsp://%s:%s@%s:%s/videoMain" % (user, password, host, port)
 
@@ -424,7 +439,7 @@ class CamBase(object):
                 for sele in ele.childNodes:
                     if sele.nodeType == sele.TEXT_NODE:
                         xmldata = xmldata + sele.nodeValue
-                xmldata = urllib.unquote(xmldata)
+                xmldata = unquote(xmldata)
                 res[ele.nodeName] = xmldata
 
         if not doBool is None:
@@ -466,19 +481,21 @@ class CamBase(object):
             if not param[p] is None:
                 pa[p] = param[p]
 
-        ps = urllib.urlencode(pa)
+        ps = urlencode(pa)
 
-        if self.consoleDump: print("%s?%s\n\n" % (self.base, ps))
+        if self.consoleDump:
+            print("%s?%s\n\n" % (self.base, ps))
         if not self.debugfile is None: self.debugfile.write("%s?%s\n\n" % (self.base, ps))
         url = self.base + "?" + ps
 
         if headers is None:
-            retdata = urllib.urlopen(url, data=data).read()
+            retdata = urlopen(url, data=data).read()
         else:
-            request = urllib2.Request(url, data=data, headers=headers)
-            retdata = urllib2.urlopen(request).read()
+            request = Request(url, data=data, headers=headers)
+            retdata = urlopen(request).read()
 
-        if self.consoleDump: print("%s\n\n" % retdata)
+        if self.consoleDump:
+            print("%s\n\n" % retdata)
         if not self.debugfile is None: self.debugfile.write("%s\n\n" % (retdata))
 
         if raw:
@@ -781,8 +798,8 @@ class CamBase(object):
 
         if w.result == 0:
             link = "/configs/export/%s" % w.fileName
-            link2 = urlparse.urljoin(self.base, link)
-            data = urllib.urlopen(link2).read()
+            link2 = urljoin(self.base, link)
+            data = urlopen(link2).read()
             return (data, w.fileName)
         else:
             return None
@@ -1135,19 +1152,21 @@ class Cam(CamBase):
         """
         w = CamBase.snapPicture(self)
         # <html><body><img src="../snapPic/Snap_20131027-114838.jpg"/></body></html>
+        if sys.version_info.major > 2:
+            w = w.decode("utf8")                # Python3: result are bytes
         res = re.search("img src=\"(.+)\"", w)
         if res is None: return (None, None)
 
         link = res.group(1)
-        ipath = urlparse.urlsplit(link).path
+        ipath = urlsplit(link).path
         p = ipath.rfind("/")
 
         if p == -1: return (None, None)
         fname = ipath[p + 1:]
 
-        link2 = urlparse.urljoin(self.base, link)
+        link2 = urljoin(self.base, link)
 
-        data = urllib.urlopen(link2).read()
+        data = urlopen(link2).read()
         return (data, fname)
 
     def getPTZSpeed(self):

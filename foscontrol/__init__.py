@@ -853,6 +853,12 @@ class CamBase(object):
     def getDevInfo(self):
         return self.sendcommand("getDevInfo")
 
+    def getDevName(self):
+        return self.sendcommand("getDevName")
+
+    def setDevName(self, name):
+        return self.sendcommand("setDevName", {"devName": name})
+
     def setWifiSetting(self, enable, useWifi, ap, encr, psk, auth,
                        defaultKey, key1, key2, key3, key4, key1len, key2len, key3len, key4len):
         self.sendcommand("setWifiSetting", {

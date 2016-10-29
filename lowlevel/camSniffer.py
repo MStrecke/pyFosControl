@@ -3,16 +3,17 @@
 
 from __future__ import print_function
 
-import pcap
 import socket
 import sys
 import urllib
 
 import dpkt
+import pcap
 
 import FoscDecoder
 
-""" analyse a packet capture either live or from a file
+"""
+    analyse a packet capture either live or from a file
 
     The main goal for this program is to analyse the traffic between the Foscam Windows
     browser plugin and a Foscam FI9821W V2.  This is one of their cheaper HD H.264 cameras.
@@ -70,7 +71,8 @@ import FoscDecoder
 
 
 def print_src_dest_ip(ip):
-    """ output source and destination IP address (and ports, if possible)
+    """
+    output source and destination IP address (and ports, if possible)
     """
     srcip = socket.inet_ntoa(ip.src)
     dstip = socket.inet_ntoa(ip.dst)
@@ -82,8 +84,9 @@ def print_src_dest_ip(ip):
     print("%s -> %s" % (srcip, dstip))
 
 
-class analyser(object):
-    """ analyser base object
+class Analyser(object):
+    """
+    analyser base object
 
     does some house keeping for the sub classes
     """
@@ -98,7 +101,8 @@ class analyser(object):
         self.compdata_allequal = True
 
     def process_packet(self, pktlen, data, timestamp):
-        """ count packets and calculate relative timestamp
+        """
+        count packets and calculate relative timestamp
 
         .. note:: sub classes should call this one first
         """
@@ -109,12 +113,14 @@ class analyser(object):
         self.rel_timestamp = timestamp - self.firsttimestamp
 
     def count_as_shown(self):
-        """ increase another counter for the final stats
+        """
+        increase another counter for the final stats
         """
         self.count_shown += 1
 
     def test_data(self, data):
-        """ determine if the content of all packets handed to this function are equal
+        """
+        determine if the content of all packets handed to this function are equal
         .. note:: shows up in the final stats
         .. note:: useful to check if the content of a given command packet changes or not
         """
@@ -126,7 +132,8 @@ class analyser(object):
                 self.compdata_allequal = False
 
     def print_stat(self):
-        """ give some stats
+        """
+        give some stats
         """
         print("Number of packets: {}".format(self.count))
         print("........... shown: {}".format(self.count_shown))
@@ -134,15 +141,17 @@ class analyser(object):
             print("all tested data packets were equal")
 
 
-class packet_source(object):
-    """ packet source base object
+class PacketSource(object):
+    """
+    packet source base object
     """
 
     def __init__(self, analyser):
         self.analyser = analyser()
 
     def loop(self):
-        """ loop through all packets
+        """
+        loop through all packets
 
         override me!
         """
@@ -152,31 +161,34 @@ class packet_source(object):
         self.analyser.print_stat()
 
 
-class live_source(packet_source):
-    """ a live capture packet source
+class LiveSource(PacketSource):
+    """
+    a live capture packet source
     """
 
-    def __init__(self, analyser, device, filter=None, filename=None):
-        """ constructor
+    def __init__(self, analyser, device, filter_=None, filename=None):
+        """
+        constructor
         :param analyser: the uninstantiated analyser class
         :param device: the device to listen to (e.g. "eth0", "wlan1")
-        :param filter: optional filter (pcap notation, e.g. "ip host 192.168.0.102", "UDP")
+        :param filter_: optional filter (pcap notation, e.g. "ip host 192.168.0.102", "UDP")
         """
 
         self.p = pcap.pcapObject()
         self.p.open_live(device, 65535, 0, 100)  # device, snaplength, promiscous_mode, timeout
 
-        if not filter is None:
-            self.p.setfilter(filter, 0, 0)
+        if filter_ is not None:
+            self.p.setfilter(filter_, 0, 0)
 
         self.dumper = False
         if filename is not None:
             self.p.dump_open(filename)
             self.dumper = True
-        packet_source.__init__(self, analyser)
+        super(LiveSource, self).__init__(analyser)
 
     def loop(self):
-        """ loop intended to for console, press ^C to stop
+        """
+        loop intended for console, press ^C to stop
         """
         try:
             while 1:
@@ -189,16 +201,18 @@ class live_source(packet_source):
             print('%d packets received, %d packets dropped, %d packets dropped by interface' % self.p.stats())
 
 
-class file_source(packet_source):
-    """ a packet source reading from a dump file
+class FileSource(PacketSource):
+    """
+    a packet source reading from a dump file
     """
 
     def __init__(self, analyser, filename):
-        """ constructor
+        """
+        constructor
         :param analyser: the uninstantiated analyser class
         :param filename: filename of the capture file
         """
-        packet_source.__init__(self, analyser)
+        super(FileSource, self).__init__(analyser)
 
         self.p = pcap.pcapObject()
         self.p.open_offline(filename)
@@ -208,13 +222,13 @@ class file_source(packet_source):
         self.p.dispatch(-1, self.analyser.process_packet)
 
 
-class fosc_analyser(analyser):
-    """ class to analyse the live or offline capture
+class FoscAnalyser(Analyser):
+    """
+    class to analyse the live or offline capture
     """
 
     def __init__(self):
-        analyser.__init__(self)
-
+        super(FoscAnalyser, self).__init__()
         # Some additional general stats:
         #
         # remember:  remember the order in which the commands are found
@@ -235,7 +249,7 @@ class fosc_analyser(analyser):
             self.stat[cmd] = 1
 
     def print_stat(self):
-        analyser.print_stat(self)
+        self.print_stat()
         print("Remember")
         print(self.remember)
         for x in sorted(self.stat):
@@ -261,8 +275,8 @@ class fosc_analyser(analyser):
                 if no not in self.errors:
                     self.errors.append(no)
 
-        # call super methode for some housekeeping
-        analyser.process_packet(self, pktlen, data, timestamp)
+        # call method for some housekeeping
+        self.process_packet(pktlen, data, timestamp)
 
         # let dpkt analyse the packet
         ether = dpkt.ethernet.Ethernet(data)
@@ -329,7 +343,7 @@ class fosc_analyser(analyser):
 
         # do some stats
         self.count_as_shown()
-        analyser.test_data(self, ip.tcp.data)
+        self.test_data(ip.tcp.data)
         self.remember_me(cmd)
 
         print()
@@ -365,6 +379,7 @@ if __name__ == '__main__':
     audiodumpfilename = None
 
     # if the first parameter on the command line is "live", switch to live mode
+    live = False
     try:
         if sys.argv[1] == "live":
             live = True
@@ -376,10 +391,10 @@ if __name__ == '__main__':
 
     if live:
         print("Entering live mode")
-        if not recfile is None:
+        if recfile is not None:
             print("dumping to: {}".format(recfile))
     else:
-        if not playfile is None:
+        if playfile is not None:
             print("reading from: {}".format(playfile))
 
     # open a file for the content of packet 27
@@ -390,13 +405,13 @@ if __name__ == '__main__':
 
     if live:
         # note: live_source usually needs root permissions
-        ana = live_source(fosc_analyser,
-                          device=pcap_device,  # "wlan1", ...
-                          filter=None,  # "ip host 192.168.0.102", or None
-                          filename=recfile  # dump to file, or None
-                          )
+        ana = LiveSource(FoscAnalyser,
+                         device=pcap_device,  # "wlan1", ...
+                         filter_=None,  # "ip host 192.168.0.102", or None
+                         filename=recfile  # dump to file, or None
+                         )
     else:
-        ana = file_source(fosc_analyser, recfile)
+        ana = FileSource(FoscAnalyser, recfile)
 
     ana.loop()
     print()
@@ -404,5 +419,5 @@ if __name__ == '__main__':
 
     FoscDecoder.datacomp.stats()
 
-    if not audiodump is None:
+    if audiodump is not None:
         audiodump.close()

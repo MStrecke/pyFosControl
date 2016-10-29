@@ -7,7 +7,8 @@ import struct
 
 
 def printhex(data, info="", highlight=None):
-    """ output string as hex and ASCII dump
+    """
+    output string as hex and ASCII dump
     :param data: binary data
     :param info: info string to print in header
     :param highlight: if position (starting with 0) is in this array, print highlight
@@ -57,8 +58,9 @@ def printhex(data, info="", highlight=None):
         start += 16
 
 
-class datacompare(object):
-    """ class to compare data blocks
+class DataCompare(object):
+    """
+    class to compare data blocks
 
     dc = datacompare()
     dc.put( datablock1 )
@@ -126,7 +128,8 @@ def testNone(value, hint):
 # They raise Exceptions in case of errors
 
 def unpack(fmt, data):
-    """ convenience unpack method
+    """
+    convenience unpack method
     :param fmt: struct format string
     :param data: "binary" data
     :returns: tuple with converted content
@@ -137,7 +140,8 @@ def unpack(fmt, data):
 
 
 def toBool(s):
-    """ convenience function to convert byte to Boolean
+    """
+    convenience function to convert byte to Boolean
     :param s: input byte
     :returns: tuple (boolean, error)
     ..note:: throws ValueError in byte is not 0 or 1
@@ -150,7 +154,8 @@ def toBool(s):
 
 
 def toString(s, hint="", ignorepadding=False):
-    """ function to extract a string from a buffer padded with zeroes
+    """
+    function to extract a string from a buffer padded with zeroes
     :param s: input bytes
     :param ignorepadding: don't check padding
     :returns: cleaned string
@@ -179,8 +184,9 @@ def toString(s, hint="", ignorepadding=False):
 # Decoding functions
 #
 
-class foss_cmd_decode(object):
-    """ base decoder object
+class FossCmdDecode(object):
+    """
+    base decoder object
 
     The purpose of these objects is to
     - decode the obvious content
@@ -198,7 +204,8 @@ class foss_cmd_decode(object):
         return self.descr
 
     def decode(self, data):
-        """ decode data
+        """
+        decode data
         :returns: None, if decode was successful; errormsg: if there were problems
         """
         # nothing yet, override me
@@ -207,7 +214,8 @@ class foss_cmd_decode(object):
 
 
 def unpad(s):
-    """ unpad a string from trailing 0x00
+    """
+    unpad a string from trailing 0x00
         make sure that all trailing zeros are actually zeros
     :param s: source string
     :returns: unpadded string, error message (or None, if ok)
@@ -228,7 +236,7 @@ def unpad(s):
     return res, error
 
 
-class foss_cmd_0(foss_cmd_decode):
+class FossCmd0(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -241,7 +249,7 @@ class foss_cmd_0(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 0, "U+P+ID 0")
+        super(FossCmd0, self).__init__(0, "U+P+ID 0")
 
     def decode(self, data):
         cmd, magic, size, vstream, username, password, uid, padding = struct.unpack("<I4sIB64s64sI28s", data)
@@ -256,7 +264,7 @@ class foss_cmd_0(foss_cmd_decode):
         print("User/Pass/uid: %s %s %08x - video stream %s" % (username, password, uid, vstream))
 
 
-class foss_cmd_2(foss_cmd_decode):
+class FossCmd2(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -268,7 +276,7 @@ class foss_cmd_2(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 5, "U+P 2")
+        super(FossCmd2, self).__init__(5, "U+P 2")
 
     def decode(self, data):
         cmd, magic, size, unknown, username, password, padding = struct.unpack("<I4sIB64s64s32s", data)
@@ -282,7 +290,7 @@ class foss_cmd_2(foss_cmd_decode):
         print("User/Pass: %s %s" % (username, password))
 
 
-class foss_cmd_3(foss_cmd_decode):
+class FossCmd3(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -294,7 +302,7 @@ class foss_cmd_3(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 3, "U+P 3")
+        super(FossCmd3, self).__init__(3, "U+P 3")
 
     def decode(self, data):
         cmd, magic, size, unknown, username, password, padding = struct.unpack("<I4sIB64s64s32s", data)
@@ -308,7 +316,7 @@ class foss_cmd_3(foss_cmd_decode):
         print("User/Pass: %s %s" % (username, password))
 
 
-class foss_cmd_5(foss_cmd_decode):
+class FossCmd5(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -322,7 +330,7 @@ class foss_cmd_5(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 5, "U+P 5")
+        super(FossCmd5, self).__init__(5, "U+P 5")
 
     def decode(self, data):
         cmd, magic, size, username, password, padding = struct.unpack("<I4sI64s64s32s", data)
@@ -335,7 +343,7 @@ class foss_cmd_5(foss_cmd_decode):
         print("User/Pass: %s %s" % (username, password))
 
 
-class foss_cmd_12(foss_cmd_decode):
+class FossCmd12(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -347,7 +355,7 @@ class foss_cmd_12(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 12, "U+P+ID 12")
+        super(FossCmd12, self).__init__(12, "U+P+ID 12")
 
     def decode(self, data):
         cmd, magic, size, username, password, uid, padding = struct.unpack("<I4sI64s64sI32s", data)
@@ -360,7 +368,7 @@ class foss_cmd_12(foss_cmd_decode):
         print("User/Pass/uid: %s %s %08x" % (username, password, uid))
 
 
-class foss_cmd_15(foss_cmd_decode):
+class FossCmd15(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -369,7 +377,7 @@ class foss_cmd_15(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 15, "keep alive request")
+        super(FossCmd15, self).__init__(15, "keep alive request")
 
     def decode(self, data):
         cmd, magic, size, uid = struct.unpack("<I4sII", data)
@@ -377,7 +385,7 @@ class foss_cmd_15(foss_cmd_decode):
         # printhex(data)
 
 
-class foss_cmd_21(foss_cmd_decode):
+class FossCmd21(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -386,13 +394,13 @@ class foss_cmd_21(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 21, "Speaker off reply")
+        super(FossCmd21, self).__init__(21, "Speaker off reply")
 
     def decode(self, data):
         cmd, magic, size, rdata = struct.unpack("<I4sI36s", data)
 
 
-class foss_cmd_27(foss_cmd_decode):
+class FossCmd27(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -404,7 +412,7 @@ class foss_cmd_27(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 27, "audio in")
+        super(FossCmd27, self).__init__(27, "audio in")
 
     def decode(self, data):
         cmd, magic, size, hd1, hd2, audiopart = unpack("<I4sI12s24s32s", data)
@@ -420,7 +428,7 @@ class foss_cmd_27(foss_cmd_decode):
             printhex(data[48 + asize:])
 
 
-class foss_cmd_29(foss_cmd_decode):
+class FossCmd29(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -429,7 +437,7 @@ class foss_cmd_29(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 29, "keep alive answer")
+        super(FossCmd29, self).__init__(29, "keep alive answer")
 
     def decode(self, data):
         cmd, magic, size, login = struct.unpack("<I4sII", data)
@@ -441,7 +449,7 @@ class foss_cmd_29(foss_cmd_decode):
             raise ValueError("Unknown login result value")
 
 
-class foss_cmd_108(foss_cmd_decode):
+class FossCmd108(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -452,7 +460,7 @@ class foss_cmd_108(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 108, "show mirror/flip")
+        super(FossCmd108, self).__init__(108, "show mirror/flip")
 
     def decode(self, data):
         cmd, magic, size, mirror, flip = struct.unpack("<I4sIBB", data)
@@ -463,7 +471,7 @@ class foss_cmd_108(foss_cmd_decode):
         print("mirror %s, flip %s" % (mirror_fl, flip_fl))
 
 
-class foss_cmd_100(foss_cmd_decode):
+class FossCmd100(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -478,7 +486,7 @@ class foss_cmd_100(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 100, "presets, walks and more")
+        super(FossCmd100, self).__init__(100, "presets, walks and more")
 
     def decode(self, data):
         printhex(data)
@@ -504,7 +512,7 @@ class foss_cmd_100(foss_cmd_decode):
         print("Camera ID:".format(cameraid))
 
 
-class foss_cmd_106(foss_cmd_decode):
+class FossCmd106(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -515,7 +523,7 @@ class foss_cmd_106(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 106, "preset points changed")
+        super(FossCmd106, self).__init__(106, "preset points changed")
 
     def decode(self, data):
         cmd, magic, size, \
@@ -532,7 +540,7 @@ class foss_cmd_106(foss_cmd_decode):
         print("Names of presets:{}".format(presets))
 
 
-class foss_cmd_107(foss_cmd_decode):
+class FossCmd107(FossCmdDecode):
     """
     int32  command
     char4  FOSC
@@ -543,7 +551,7 @@ class foss_cmd_107(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 107, "cruises list changed")
+        super(FossCmd107, self).__init__(107, "cruises list changed")
 
     def decode(self, data):
         cmd, magic, size, \
@@ -561,7 +569,7 @@ class foss_cmd_107(foss_cmd_decode):
         print("Name of cruises: {}".format(cruises))
 
 
-class foss_cmd_110(foss_cmd_decode):
+class FossCmd110(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -576,7 +584,7 @@ class foss_cmd_110(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 110, "show color settings")
+        super(FossCmd110, self).__init__(110, "show color settings")
 
     def decode(self, data):
         cmd, magic, size, bright, contrast, hue, saturation, sharp, denoise = struct.unpack("<I4sIBBBBBB", data)
@@ -584,7 +592,7 @@ class foss_cmd_110(foss_cmd_decode):
         testValue(denoise, 50, "denoise value")
 
 
-class foss_cmd_111(foss_cmd_decode):
+class FossCmd111(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -599,7 +607,7 @@ class foss_cmd_111(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 111, "motion detection alert")
+        super(FossCmd111, self).__init__(111, "motion detection alert")
 
     def decode(self, data):
         cmd, magic, size, flags = struct.unpack("<I4sI4s", data)
@@ -607,7 +615,7 @@ class foss_cmd_111(foss_cmd_decode):
         testString(flags, "\x01\0x00\0x00\0x1e", hint="flags")
 
 
-class foss_cmd_112(foss_cmd_decode):
+class FossCmd112(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -616,7 +624,7 @@ class foss_cmd_112(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 112, "show pwr freq")
+        super(FossCmd112, self).__init__(112, "show pwr freq")
 
     def decode(self, data):
         cmd, magic, size, mode = struct.unpack("<I4sII", data)
@@ -625,7 +633,7 @@ class foss_cmd_112(foss_cmd_decode):
         print("Power freq.: %s" % decmode)
 
 
-class foss_cmd_113(foss_cmd_decode):
+class FossCmd113(FossCmdDecode):
     """
     int32 command
     char4 FOSC
@@ -634,7 +642,7 @@ class foss_cmd_113(foss_cmd_decode):
     """
 
     def __init__(self):
-        foss_cmd_decode.__init__(self, 113, "show stream no")
+        super(FossCmd113, self).__init__(113, "show stream no")
 
     def decode(self, data):
         cmd, magic, size, stream = struct.unpack("<I4sII", data)
@@ -657,27 +665,27 @@ def closeAudioDumpFile():
 
 
 decoder_list = [
-    foss_cmd_0(),
-    foss_cmd_2(),
-    foss_cmd_3(),
-    foss_cmd_5(),
-    foss_cmd_12(),
-    foss_cmd_15(),
-    foss_cmd_21(),
-    foss_cmd_27(),
-    foss_cmd_29(),
-    foss_cmd_100(),
-    foss_cmd_106(),
-    foss_cmd_107(),
-    foss_cmd_108(),
-    foss_cmd_110(),
-    foss_cmd_111(),
-    foss_cmd_112(),
-    foss_cmd_113()
+    FossCmd0(),
+    FossCmd2(),
+    FossCmd3(),
+    FossCmd5(),
+    FossCmd12(),
+    FossCmd15(),
+    FossCmd21(),
+    FossCmd27(),
+    FossCmd29(),
+    FossCmd100(),
+    FossCmd106(),
+    FossCmd107(),
+    FossCmd108(),
+    FossCmd110(),
+    FossCmd111(),
+    FossCmd112(),
+    FossCmd113()
 ]
 
 decoder_descriptions = {subd.cmd_no(): subd.description() for subd in decoder_list}
 decoder_call = {subd.cmd_no(): subd.decode for subd in decoder_list}
 
 # Give the decoder some means to analyse the packets
-datacomp = datacompare()
+datacomp = DataCompare()

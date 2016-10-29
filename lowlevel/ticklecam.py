@@ -15,7 +15,7 @@ sys.path.append("..")  # only for pyFosControl in parent directory
 import pyFosControl
 
 
-class readthread(Thread):
+class ReadThread(Thread):
     """
      We use a persistent tcp connection and blocking read from a socket with a timeout of 1 sec.
 
@@ -31,7 +31,7 @@ class readthread(Thread):
 
     def __init__(self, socket, name=None):
         self.socket = socket
-        Thread.__init__(self)
+        super(ReadThread, self).__init__()
         self.endflag = False
         if name is not None:
             self.setName(name)
@@ -123,7 +123,7 @@ class readthread(Thread):
                 print(msg)
 
 
-class tcphandler(object):
+class TCPHandler(object):
     def __init__(self, host, port, name):
         # timeout in seconds
         timeout = 1
@@ -138,7 +138,7 @@ class tcphandler(object):
         self.con.connect((self.ip, self.port))
 
         # create read thread and start it
-        self.reader = readthread(self.con, name)
+        self.reader = ReadThread(self.con, name)
         self.reader.start()
 
     def close(self):
@@ -164,7 +164,7 @@ class tcphandler(object):
         self.con.send(data)
 
 
-class camhandler(tcphandler):
+class CamHandler(TCPHandler):
     """ class to send commands to the cam
     """
 
@@ -446,7 +446,7 @@ cgictrl.setConsoleDump(True)
 
 # Set-up the connection and the listener thread
 try:
-    spush = camhandler(camera_ip, camera_port, "spush-Handler")
+    spush = CamHandler(camera_ip, camera_port, "spush-Handler")
 except socket.timeout:
     print("Connection failed")
     sys.exit(1)

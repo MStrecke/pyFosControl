@@ -1,2 +1,2 @@
 dpkt
-pypcap
+pylibpcap

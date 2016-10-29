@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import socket
-import struct
-import sys
+from __future__ import print_function
+
 import pcap
-import dpkt
+import socket
+import sys
 import urllib
+
+import dpkt
+
 import FoscDecoder
 
 """ analyse a packet capture either live or from a file
@@ -76,7 +79,7 @@ def print_src_dest_ip(ip):
     if ip.p == dpkt.ip.IP_PROTO_TCP:
         srcip += ":%s" % ip.tcp.sport
         dstip += ":%s" % ip.tcp.dport
-    print "%s -> %s" % (srcip, dstip)
+    print("%s -> %s" % (srcip, dstip))
 
 
 class analyser(object):
@@ -84,6 +87,7 @@ class analyser(object):
 
     does some house keeping for the sub classes
     """
+
     def __init__(self):
         self.firsttimestamp = None
         self.rel_timestamp = None
@@ -109,7 +113,7 @@ class analyser(object):
         """
         self.count_shown += 1
 
-    def test_data(self,data):
+    def test_data(self, data):
         """ determine if the content of all packets handed to this function are equal
         .. note:: shows up in the final stats
         .. note:: useful to check if the content of a given command packet changes or not
@@ -124,15 +128,17 @@ class analyser(object):
     def print_stat(self):
         """ give some stats
         """
-        print "Number of packets:", self.count
-        print "........... shown:", self.count_shown
-        if self.compdata_allequal and not self.compdata is None:
-            print "all tested data packets were equal"
+        print("Number of packets: {}".format(self.count))
+        print("........... shown: {}".format(self.count_shown))
+        if self.compdata_allequal and self.compdata is not None:
+            print("all tested data packets were equal")
+
 
 class packet_source(object):
     """ packet source base object
     """
-    def __init__(self,analyser):
+
+    def __init__(self, analyser):
         self.analyser = analyser()
 
     def loop(self):
@@ -145,10 +151,12 @@ class packet_source(object):
     def print_analyser_stat(self):
         self.analyser.print_stat()
 
+
 class live_source(packet_source):
     """ a live capture packet source
     """
-    def __init__(self, analyser, device, filter=None, filename = None):
+
+    def __init__(self, analyser, device, filter=None, filename=None):
         """ constructor
         :param analyser: the uninstantiated analyser class
         :param device: the device to listen to (e.g. "eth0", "wlan1")
@@ -162,11 +170,10 @@ class live_source(packet_source):
             self.p.setfilter(filter, 0, 0)
 
         self.dumper = False
-        if not filename is None:
+        if filename is not None:
             self.p.dump_open(filename)
             self.dumper = True
-        packet_source.__init__(self,analyser)
-
+        packet_source.__init__(self, analyser)
 
     def loop(self):
         """ loop intended to for console, press ^C to stop
@@ -175,21 +182,23 @@ class live_source(packet_source):
             while 1:
                 self.p.dispatch(1, self.analyser.process_packet)
                 if self.dumper:
-                    self.p.dispatch(1,None)
+                    self.p.dispatch(1, None)
         except KeyboardInterrupt:
-            print '%s' % sys.exc_type
-            print 'shutting down'
-            print '%d packets received, %d packets dropped, %d packets dropped by interface' % self.p.stats()
+            print('%s' % sys.exc_type)
+            print('shutting down')
+            print('%d packets received, %d packets dropped, %d packets dropped by interface' % self.p.stats())
+
 
 class file_source(packet_source):
     """ a packet source reading from a dump file
     """
+
     def __init__(self, analyser, filename):
         """ constructor
         :param analyser: the uninstantiated analyser class
         :param filename: filename of the capture file
         """
-        packet_source.__init__(self,analyser)
+        packet_source.__init__(self, analyser)
 
         self.p = pcap.pcapObject()
         self.p.open_offline(filename)
@@ -218,7 +227,7 @@ class fosc_analyser(analyser):
         self.descriptions = FoscDecoder.decoder_descriptions
         self.call = FoscDecoder.decoder_call
 
-    def remember_me(self,cmd):
+    def remember_me(self, cmd):
         self.remember.append(cmd)
         if cmd in self.stat:
             self.stat[cmd] += 1
@@ -227,40 +236,40 @@ class fosc_analyser(analyser):
 
     def print_stat(self):
         analyser.print_stat(self)
-        print "Remember"
-        print self.remember
+        print("Remember")
+        print(self.remember)
         for x in sorted(self.stat):
-            print "cmd %s: %s" % (x, self.stat[x])
+            print("cmd %s: %s" % (x, self.stat[x]))
         if len(self.errors) > 0:
-            print "Decoding errors in cmds:", self.errors
+            print("Decoding errors in cmds:", self.errors)
 
     def process_packet(self, pktlen, data, timestamp):
         global verbose
         global camera_ip
 
         def possiblemeaning(no):
-            return self.descriptions.get(no,"???")
+            return self.descriptions.get(no, "???")
 
         def possibledecode(no, data):
             func = self.call.get(cmd, FoscDecoder.printhex)
             try:
                 error = func(ip.tcp.data)
-            except BaseException, e:
+            except BaseException as e:
                 error = e.message
-                print "*** Decode error: "+e.message
+                print("*** Decode error: {}".format(e.message))
                 # Remember # of command for print_stats
-                if not no in self.errors:
+                if no not in self.errors:
                     self.errors.append(no)
 
         # call super methode for some housekeeping
-        analyser.process_packet(self,pktlen, data, timestamp)
+        analyser.process_packet(self, pktlen, data, timestamp)
 
         # let dpkt analyse the packet
         ether = dpkt.ethernet.Ethernet(data)
 
         # is it an IP packet?
         if ether.type != dpkt.ethernet.ETH_TYPE_IP:
-           return
+            return
 
         # get the content of the IP packet
         ip = ether.data
@@ -270,13 +279,13 @@ class fosc_analyser(analyser):
             return
 
         # only traffic, from/to the camera
-        if not ( socket.inet_ntoa(ip.src) == camera_ip or socket.inet_ntoa(ip.dst) == camera_ip):
+        if not (socket.inet_ntoa(ip.src) == camera_ip or socket.inet_ntoa(ip.dst) == camera_ip):
             return
 
         # check for HTTP traffic
         try:
             http_rq = dpkt.http.Request(ip.tcp.data)
-            print "\nURL-Req:", urllib.unquote(http_rq.uri)
+            print("\nURL-Req: {}".format(urllib.unquote(http_rq.uri)))
             self.remember_me(http_rq.uri)
         except dpkt.dpkt.UnpackError:
             pass
@@ -284,32 +293,34 @@ class fosc_analyser(analyser):
         # check for "low/level" traffic
         # is the tcp data larger than 12 bytes?
         # 4 bytes length information, 4 bytes "FOSC", 4 bytes data len
-        if len(ip.tcp.data)<12:
+        if len(ip.tcp.data) < 12:
             return
 
         # unpack those 8 bytes
-        cmd, magic, datalen = FoscDecoder.unpack("<I4sI",ip.tcp.data)
+        cmd, magic, datalen = FoscDecoder.unpack("<I4sI", ip.tcp.data)
 
         # is the "magic" identifier present?
         if magic != 'FOSC':
             return
 
         # ignore LoninTest/Reply
-        if cmd in [15,29]: return
+        if cmd in [15, 29]:
+            return
 
         # ignore video in
-        if cmd == 26: return
+        if cmd == 26:
+            return
 
         # if cmd != 0: return
         # diff = FoscDecoder.datacomp.put(ip.tcp.data)
         # FoscDecoder.printhex(ip.tcp.data, "cmd0", diff)
         # return
 
-        if not cmd in [106,107]: return
+        if not cmd in [106, 107]: return
         # if cmd in [12, 15, 29, 26]: return
 
         if not verbose:
-            print cmd
+            print(cmd)
             return
 
         # stop after a given number of decoded packets
@@ -318,28 +329,28 @@ class fosc_analyser(analyser):
 
         # do some stats
         self.count_as_shown()
-        analyser.test_data(self,ip.tcp.data)
+        analyser.test_data(self, ip.tcp.data)
         self.remember_me(cmd)
 
-        print
+        print()
         print_src_dest_ip(ip)
         if socket.inet_ntoa(ip.src) == camera_ip:
-            print "Camera -> User"
+            print("Camera -> User")
         if socket.inet_ntoa(ip.dst) == camera_ip:
-            print "User -> Camera"
+            print("User -> Camera")
 
-        print "#%s @ %s:" % (self.count, self.rel_timestamp)  # position in pcap file
-        print "command %s: %s" % (cmd, possiblemeaning(cmd))
-        print "tcp data length:", len(ip.tcp.data)
-        print "datalen", datalen
-        if (datalen+12) != len(ip.tcp.data):
-            print "Packet length mismatch! Multiple commands in one packet/one command in multiple packets?"
-        possibledecode(cmd,ip.tcp.data)
-        if (datalen+12) < len(ip.tcp.data):
-            print "Additional data:"
-            FoscDecoder.printhex(ip.tcp.data[datalen+12:])
+        print("#%s @ %s:" % (self.count, self.rel_timestamp))  # position in pcap file
+        print("command %s: %s" % (cmd, possiblemeaning(cmd)))
+        print("tcp data length: {}".format(len(ip.tcp.data)))
+        print("datalen {}".format(datalen))
+        if (datalen + 12) != len(ip.tcp.data):
+            print("Packet length mismatch! Multiple commands in one packet/one command in multiple packets?")
+        possibledecode(cmd, ip.tcp.data)
+        if (datalen + 12) < len(ip.tcp.data):
+            print("Additional data: {}".format(FoscDecoder.printhex(ip.tcp.data[datalen + 12:])))
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
 
     # change according to your environment
     camera_ip = "192.168.0.102"
@@ -364,31 +375,31 @@ if __name__=='__main__':
     # verbose = True
 
     if live:
-        print "Entering live mode"
+        print("Entering live mode")
         if not recfile is None:
-            print "dumping to:", recfile
+            print("dumping to: {}".format(recfile))
     else:
         if not playfile is None:
-            print "reading from:", playfile
+            print("reading from: {}".format(playfile))
 
     # open a file for the content of packet 27
     if audiodumpfilename is None:
         audiodump = None
     else:
-        audiodump = open(audiodumpfilename,"wb")
+        audiodump = open(audiodumpfilename, "wb")
 
     if live:
         # note: live_source usually needs root permissions
         ana = live_source(fosc_analyser,
-                          device = pcap_device,    # "wlan1", ...
-                          filter = None,           # "ip host 192.168.0.102", or None
-                          filename = recfile       # dump to file, or None
-                        )
+                          device=pcap_device,  # "wlan1", ...
+                          filter=None,  # "ip host 192.168.0.102", or None
+                          filename=recfile  # dump to file, or None
+                          )
     else:
-        ana = file_source(fosc_analyser,recfile)
+        ana = file_source(fosc_analyser, recfile)
 
     ana.loop()
-    print
+    print()
     ana.print_analyser_stat()
 
     FoscDecoder.datacomp.stats()

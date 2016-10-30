@@ -1,8 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 from foscontrol import Cam
-import ConfigParser
+
+try:  # PY3
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser
 
 ################################
 # Don't forget to edit cam.cfg #
@@ -10,7 +16,7 @@ import ConfigParser
 ################################
 
 if __name__ == "__main__":
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser()
 
     # see cam.cfg.example
     config.readfp(open('cam.cfg'))
@@ -26,11 +32,10 @@ if __name__ == "__main__":
     # display basic camera info
     res = do.getDevInfo()
     if res.result == 0:  # quick check
-        print """product name: %s
+        print("""product name: %s
 serial number: %s
 camera name: %s
 firmware version: %s
-hardware version: %s""" % (res.productName, res.serialNo, res.devName, res.firmwareVer, res.hardwareVer)
+hardware version: %s""" % (res.productName, res.serialNo, res.devName, res.firmwareVer, res.hardwareVer))
     else:
-        print res._result
-
+        print(res._result)

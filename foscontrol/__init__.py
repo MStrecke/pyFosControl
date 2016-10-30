@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import xml.dom.minidom
-import re
-import struct, socket
 import datetime
+import re
+import socket
+import struct
 import sys
+import xml.dom.minidom
 
 try:
     from urlparse import urlsplit, urljoin
@@ -132,6 +133,7 @@ class DictBits(object):
             value >>= 1
             pos += 1
         return res
+
 
 # same for: motion detection, IO alarm
 BD_alarmAction = DictBits({0: "ring", 1: "mail", 2: "picture", 3: "video"})
@@ -660,7 +662,6 @@ class CamBase(object):
 
         return self.sendcommand("setOsdMaskArea", param=params)
 
-
     def getMotionDetectConfig(self):
         return self.sendcommand("getMotionDetectConfig", doBool=["isEnable"])
 
@@ -676,7 +677,6 @@ class CamBase(object):
             param["area%s" % row] = areas[row]
 
         return self.sendcommand("setMotionDetectConfig", param=param, doBool=["isEnable"])
-
 
     # ptz commands
     def ptzReset(self):
@@ -758,7 +758,6 @@ class CamBase(object):
                  "dns2": dns2}
         return self.sendcommand("setIpInfo", param=param, doBool=["isDHCP"])
 
-
     def zoomIn(self):
         return self.sendcommand("zoomIn")
 
@@ -814,7 +813,6 @@ class CamBase(object):
         files = {'file': {'filename': filename, 'content': filedata}}
         data, headers = encode_multipart(fields, files)
         return self.sendcommand("importConfig", headers=headers, data=data)
-
 
     def snapPicture(self):
         """ queries the camera for a snapshot
@@ -954,7 +952,7 @@ class CamBase(object):
                  "alarmLevel": alarmLevel,
                  "snapInterval": snapInterval,
                  "triggerInterval": triggerInterval
-        }
+                 }
         param.update(array2dict(schedules, "schedule"))
         return self.sendcommand("setIOAlarmConfig", param=param, doBool=["isEnable"])
 
@@ -1078,7 +1076,6 @@ class CamBase(object):
     def getSMTPConfig(self):
         return self.sendcommand("getSMTPConfig", doBool=["isEnable", "isNeedAuth"])
 
-
     def setSMTPConfig(self, isEnable, server, port, isNeedAuth, tls, user, password, sender, receiver):
         param = {"isEnable": isEnable,
                  "server": server,
@@ -1159,7 +1156,7 @@ class Cam(CamBase):
         w = CamBase.snapPicture(self)
         # <html><body><img src="../snapPic/Snap_20131027-114838.jpg"/></body></html>
         if sys.version_info.major > 2:
-            w = w.decode("utf8")                # Python3: result are bytes
+            w = w.decode("utf8")  # Python3: result are bytes
         res = re.search("img src=\"(.+)\"", w)
         if res is None: return (None, None)
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 from setuptools import setup, find_packages
 
 DESCRIPTION = "Python interface to Foscam CGI API"
@@ -15,6 +16,7 @@ CLASSIFIERS = [
     'License :: OSI Approved :: GNU v2',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
+    'Programming Language :: Python :: 2 :: Only',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 

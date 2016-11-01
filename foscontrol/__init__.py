@@ -23,6 +23,12 @@ try:
 except:
     from urllib.parse import urlencode, unquote
 
+def my_urlopen(url, data=None, context=None):
+    if sys.hexversion < 0x03040300:
+        # context not implemented
+        return urlopen(url, data=data)
+    else:
+        return urlopen(url, data=data, context=context)
 
 def encode_multipart(fields, files, boundary=None):
     """
@@ -371,18 +377,20 @@ class CamBase(object):
     - resultObj param "result" is converted to integer, if possible
     """
 
-    def __init__(self, prot, host, port, user, password):
+    def __init__(self, prot, host, port, user, password, context=None):
         """
         :param prot: protocol used ("http" or "https")
         :param host: hostname (e.g. "www.example.com")
         :param port: port used (e.g. 88 or 443)
         :param user: username of account in camera
         :param password: password of account in camera
+        :param context; context for secure TLS connections
         """
 
         self.base = "%s://%s:%s/cgi-bin/CGIProxy.fcgi" % (prot, host, port)
         self.user = user
         self.password = password
+        self.context = context
 
         self.debugfile = None
         self.consoleDump = False
@@ -491,10 +499,10 @@ class CamBase(object):
         url = self.base + "?" + ps
 
         if headers is None:
-            retdata = urlopen(url, data=data).read()
+            retdata = my_urlopen(url, data=data, context=self.context).read()
         else:
             request = Request(url, data=data, headers=headers)
-            retdata = urlopen(request).read()
+            retdata = my_urlopen(request, context=self.context).read()
 
         if self.consoleDump:
             print("%s\n\n" % retdata)
@@ -798,7 +806,7 @@ class CamBase(object):
         if w.result == 0:
             link = "/configs/export/%s" % w.fileName
             link2 = urljoin(self.base, link)
-            data = urlopen(link2).read()
+            data = my_urlopen(link2, context=self.context).read()
             return (data, w.fileName)
         else:
             return None
@@ -1169,7 +1177,7 @@ class Cam(CamBase):
 
         link2 = urljoin(self.base, link)
 
-        data = urlopen(link2).read()
+        data = my_urlopen(link2, context=self.context).read()
         return (data, fname)
 
     def getPTZSpeed(self):

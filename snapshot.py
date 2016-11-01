@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -42,13 +42,17 @@ if __name__ == "__main__":
     # connection to the camera
     do = Cam(prot, host, port, user, passwd, context=ctx)
 
-    # display basic camera info
-    res = do.getDevInfo()
-    if res.result == 0:  # quick check
-        print("""product name: %s
-serial number: %s
-camera name: %s
-firmware version: %s
-hardware version: %s""" % (res.productName, res.serialNo, res.devName, res.firmwareVer, res.hardwareVer))
+    (img, fnm) = do.snapPicture()
+    # Possible errors/exceptions:
+    #
+    # urllib.error.URLError (e.g. no route to host)
+    # ssl.CertificateError (e.g. wrong or no ssl certificate)
+    # img == None (e.g. wrong password)
+
+    if img is not None:
+        print('Writing picture')
+        open('/tmp/test.jpg', 'wb').write(img)
     else:
-        print(res._result)
+        print('No picture')
+
+

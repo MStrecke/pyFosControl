@@ -33,3 +33,20 @@ Please note
 * The non HD cameras use a different set of CGI commands and are not covered in this implementation.
 * The behaviour of the camera changes slightly with each new firmware version.  Please include model and firmware version when sending bug reports (run `camtest.py` from the command line).
 
+Certificate checking
+-------------------
+
+Since version 2.7.9 Python is checking certificates used in https connections.
+
+This works fine with most sites on the internet because their certificates are signed by major
+certificate authorities and Python has the means to verify their signatures.
+
+However, most cameras use self-signed certificates which will fail this check and throw an exception. 
+
+The certificate checking is controlled by the parameter `context.` See `camtest.py` for an example.
+This [blog entry](http://tuxpool.blogspot.de/2016/05/accessing-servers-with-self-signed.html) shows how to create a context that fits your camera.
+
+Unfortunately the `context` parameter was first added in Python 3.4.3. Between Python 2.7.9 and 3.4.3 
+you either have to refrain from using https with self-signed certs or you have to tweak your system 
+(i.e. install the camera certificate yourself in the system, change the host file, etc) so that the check is 
+successful without using `context`.    

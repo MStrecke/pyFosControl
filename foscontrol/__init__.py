@@ -180,7 +180,7 @@ DC_SmtpTlsMode = DictChar({"0": "None", "1": "TLS", "2": "STARTTLS"})
 DC_timeSource = DictChar({"0": "NTP server", "1": "manually"})
 DC_timeDateFormat = DictChar({"0": "YYYY-MM-DD", "1": "DD/MM/YYYY", "2": "MM/DD/YYYY"})
 DC_timeFormat = DictChar({"0": "12 hours", "1": "24 hours"})
-
+DC_infraLedMode =  DictChar({"0": "auto", "1": "manuel"})
 
 def array2dict(source, keyprefix, convertFunc=None):
     """ convert an array to dict
@@ -849,6 +849,11 @@ class CamBase(object):
             return self.sendcommand("openInfraLed")
         else:
             return self.sendcommand("closeInfraLed")
+
+    def getInfraLedConfig(self):
+        res = self.sendcommand("getInfraLedConfig")
+        res.stringLookupConv(res.mode, DC_infraLedMode, "_mode")
+        return res
 
     def setInfraLedConfig(self, auto):
         if auto:
